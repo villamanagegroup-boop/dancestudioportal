@@ -1,21 +1,39 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { formatCurrency } from '@/lib/utils'
+import { getPortalViewer } from '@/lib/portal-viewer'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { AlertCircle, Calendar, CreditCard } from 'lucide-react'
 
+const NO_ID = '00000000-0000-0000-0000-000000000000'
+
 export default async function PortalPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { db, effectiveId } = await getPortalViewer('g')
+  const gid = effectiveId ?? NO_ID
 
-  const { data: students } = await supabase
+  const { data: students } = await db
     .from('guardian_students').select('student:students(id, first_name, last_name)')
-    .eq('guardian_id', user.id)
+    .eq('guardian_id', gid)
 
-  const [{ data: invoices }] = await Promise.all([
-    supabase.from('invoices').select('id, amount, status, description, due_date')
-      .eq('guardian_id', user.id).in('status', ['pending', 'failed']).limit(5),
+  const studentIds = (students ?? []).map((gs: any) => gs.student?.id).filter(Boolean)
+
+  // Class ids the family is enrolled in — drives which announcements they see
+  const { data: enr } = studentIds.length
+    ? await db.from('enrollments').select('class_id').in('student_id', studentIds)
+    : { data: [] as any[] }
+  const classIds = [...new Set((enr ?? []).map((e: any) => e.class_id).filter(Boolean))]
+
+  let annQuery = db.from('communications')
+    .select('id, subject, sent_at, created_at, target_all, class:classes(name)')
+    .not('sent_at', 'is', null)
+    .order('sent_at', { ascending: false })
+    .limit(3)
+  annQuery = classIds.length
+    ? annQuery.or(`target_all.eq.true,target_class_id.in.(${classIds.join(',')})`)
+    : annQuery.eq('target_all', true)
+
+  const [{ data: invoices }, { data: announcements }] = await Promise.all([
+    db.from('invoices').select('id, amount, status, description, due_date')
+      .eq('guardian_id', gid).in('status', ['pending', 'failed']).limit(5),
+    annQuery,
   ])
 
   const outstanding = (invoices ?? []).reduce((sum, i) => sum + Number(i.amount), 0)
@@ -66,16 +84,50 @@ export default async function PortalPage() {
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             {students.map((gs: any) => gs.student && (
-              <div key={gs.student.id} className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
+              <Link
+                key={gs.student.id}
+                href={`/portal/dancers/${gs.student.id}`}
+                className="bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow"
+              >
                 <div className="w-10 h-10 rounded-full bg-studio-100 flex items-center justify-center text-studio-700 font-bold mb-2">
                   {gs.student.first_name[0]}{gs.student.last_name[0]}
                 </div>
                 <p className="font-medium text-gray-900 text-sm">{gs.student.first_name} {gs.student.last_name}</p>
-              </div>
+                <p className="text-xs text-gray-400 mt-0.5">View profile →</p>
+              </Link>
             ))}
           </div>
         )}
       </div>
+
+      {/* Latest news */}
+      {(announcements?.length ?? 0) > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Latest News</h2>
+            <Link href="/portal/announcements" className="text-sm font-medium text-studio-600 hover:text-studio-700">
+              View all
+            </Link>
+          </div>
+          <div className="space-y-2">
+            {(announcements ?? []).map((a: any) => (
+              <Link
+                key={a.id}
+                href="/portal/announcements"
+                className="block bg-white rounded-xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-shadow"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-studio-50 text-studio-700">
+                    {a.target_all ? 'Studio-wide' : a.class?.name ?? 'Class'}
+                  </span>
+                  <span className="text-sm font-medium text-gray-900">{a.subject ?? '(no subject)'}</span>
+                  <span className="text-xs text-gray-400 ml-auto">{formatDate(a.sent_at ?? a.created_at)}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Quick links */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

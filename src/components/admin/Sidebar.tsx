@@ -10,6 +10,7 @@ import {
   Tent, Sparkles, CalendarCheck, BarChart2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import PortalSwitcher from '@/components/PortalSwitcher'
 
 interface NavItem {
   href: string
@@ -69,7 +70,7 @@ function NavLink({ href, icon: Icon, label, active, onClick }: {
   )
 }
 
-export default function Sidebar() {
+export default function Sidebar({ role }: { role: string }) {
   const pathname = usePathname()
 
   const familiesExpanded = pathname.startsWith('/families') || pathname.startsWith('/students')
@@ -87,6 +88,11 @@ export default function Sidebar() {
           <p className="text-xs" style={{ color: 'var(--ink-3)' }}>Dance Studio</p>
         </div>
       </div>
+      {role === 'admin' && (
+        <div className="px-4 py-2.5" style={{ borderBottom: '1px solid var(--line)' }}>
+          <PortalSwitcher role={role} current="admin" />
+        </div>
+      )}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto min-h-0">
         {navItems.map(item => {
           if (item.children) {

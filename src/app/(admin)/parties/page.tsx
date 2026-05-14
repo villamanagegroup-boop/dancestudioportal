@@ -10,7 +10,7 @@ export default async function PartiesPage() {
     supabase.from('parties').select(`
       id, contact_name, contact_email, contact_phone,
       event_date, start_time, end_time, guest_count, package,
-      price, deposit_paid, status, notes, created_at,
+      price, amount_paid, deposit_amount, deposit_paid, status, notes, created_at,
       room:rooms(name)
     `).order('event_date', { ascending: false }),
     supabase.from('rooms').select('id, name').eq('active', true),

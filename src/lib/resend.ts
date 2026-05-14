@@ -62,6 +62,23 @@ export async function sendClassAnnouncement({
   })
 }
 
+export async function sendStudioAnnouncement({
+  to, subject, body,
+}: {
+  to: string; subject: string; body: string
+}) {
+  await resend.emails.send({
+    from: process.env.RESEND_FROM_EMAIL!,
+    to,
+    subject,
+    html: `
+      <h2>${subject}</h2>
+      <div>${body.replace(/\n/g, '<br>')}</div>
+      <p>— Capital Core Dance Studio</p>
+    `,
+  })
+}
+
 export async function sendPaymentFailedEmail({
   to, guardianName, amount,
 }: {

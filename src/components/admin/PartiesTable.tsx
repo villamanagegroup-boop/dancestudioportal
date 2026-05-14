@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Plus, Sparkles, ChevronUp, ChevronDown } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import PartyFormModal from '@/components/forms/PartyFormModal'
@@ -18,6 +19,7 @@ interface Party {
   guest_count: number | null
   package: string | null
   price: number
+  amount_paid: number
   deposit_paid: boolean
   status: string
   notes: string | null
@@ -94,7 +96,7 @@ export default function PartiesTable({ parties, rooms }: { parties: Party[]; roo
                   ))}
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Room</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Guests</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Deposit</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Payment</th>
                   <th className="sticky right-0 bg-white border-l border-gray-100 px-5 py-3" />
                 </tr>
               </thead>
@@ -102,7 +104,9 @@ export default function PartiesTable({ parties, rooms }: { parties: Party[]; roo
                 {sorted.map(party => (
                   <tr key={party.id} className="group hover:bg-gray-50">
                     <td className="px-5 py-3">
-                      <p className="text-sm font-medium text-gray-900">{party.contact_name}</p>
+                      <Link href={`/parties/${party.id}`} className="text-sm font-medium text-gray-900 hover:text-studio-700">
+                        {party.contact_name}
+                      </Link>
                       {party.contact_email && <p className="text-xs text-gray-400">{party.contact_email}</p>}
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-600">
@@ -118,9 +122,27 @@ export default function PartiesTable({ parties, rooms }: { parties: Party[]; roo
                     <td className="px-5 py-3 text-sm text-gray-600">{party.room?.name ?? '—'}</td>
                     <td className="px-5 py-3 text-sm text-gray-600">{party.guest_count ?? '—'}</td>
                     <td className="px-5 py-3">
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${party.deposit_paid ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {party.deposit_paid ? 'Paid' : 'Pending'}
-                      </span>
+                      {(() => {
+                        const price = Number(party.price) || 0
+                        const paid = Number(party.amount_paid) || 0
+                        const pct = price > 0 ? Math.min(100, Math.round((paid / price) * 100)) : 0
+                        return (
+                          <div className="w-28">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-gray-600">{formatCurrency(paid)}</span>
+                              <span className={party.deposit_paid ? 'text-green-600' : 'text-yellow-600'}>
+                                {party.deposit_paid ? 'Dep ✓' : 'Dep —'}
+                              </span>
+                            </div>
+                            <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                              <div
+                                className={pct >= 100 ? 'h-full bg-green-500' : 'h-full bg-studio-500'}
+                                style={{ width: `${pct}%` }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })()}
                     </td>
                     <td className="sticky right-0 bg-white group-hover:bg-gray-50 border-l border-gray-100 px-5 py-3 text-right transition-colors">
                       <RowActions

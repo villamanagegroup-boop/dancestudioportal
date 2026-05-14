@@ -1,20 +1,14 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { getPortalViewer } from '@/lib/portal-viewer'
 import { formatTime } from '@/lib/utils'
 import Link from 'next/link'
 
 export default async function MyClassesPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { db, effectiveId } = await getPortalViewer('i')
 
-  const { data: instructor } = await supabase
-    .from('instructors').select('id').eq('profile_id', user.id).single()
-
-  const { data: classes } = instructor
-    ? await supabase.from('classes').select(`
+  const { data: classes } = effectiveId
+    ? await db.from('classes').select(`
         *, class_type:class_types(name, style, color), room:rooms(name)
-      `).eq('instructor_id', instructor.id).eq('active', true).order('day_of_week').order('start_time')
+      `).eq('instructor_id', effectiveId).eq('active', true).order('day_of_week').order('start_time')
     : { data: [] }
 
   return (

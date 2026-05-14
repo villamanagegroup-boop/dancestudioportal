@@ -113,7 +113,7 @@ export default function PartiesShowcase({ parties, rooms }: { parties: Party[]; 
                   <div><div className="eyebrow">Price</div><div style={{ fontWeight: 600, fontSize: 14, marginTop: 2 }}>{formatCurrency(Number(featured.price))}</div></div>
                 </div>
                 <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-                  <button className="btn btn-primary"><Ticket size={14} /> View booking</button>
+                  <Link href={`/parties/${featured.id}`} className="btn btn-primary"><Ticket size={14} /> View booking</Link>
                   <span className={`tag ${featured.deposit_paid ? 'tag-mint' : 'tag-amber'}`} style={{ alignSelf: 'center' }}>
                     Deposit {featured.deposit_paid ? 'paid' : 'pending'}
                   </span>
@@ -126,7 +126,7 @@ export default function PartiesShowcase({ parties, rooms }: { parties: Party[]; 
           {rest.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {rest.map((p, i) => (
-                <div key={p.id} className="glass event-card">
+                <Link key={p.id} href={`/parties/${p.id}`} className="glass event-card">
                   <div className={`photo event-photo ${COVERS[(i + 1) % COVERS.length]}`} style={{ borderRadius: 0 }}>
                     <span className="tag" style={{ position: 'absolute', top: 12, left: 12, background: 'rgba(255,255,255,.95)', color: 'var(--ink-1)', backdropFilter: 'blur(8px)' }}>
                       {p.package ?? 'Event'}
@@ -145,7 +145,7 @@ export default function PartiesShowcase({ parties, rooms }: { parties: Party[]; 
                       <span style={{ fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{formatCurrency(Number(p.price))}</span>
                     </div>
                   </div>
-                </div>
+                </Link>
               ))}
             </div>
           )}

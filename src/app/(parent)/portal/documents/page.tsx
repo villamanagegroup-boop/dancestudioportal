@@ -1,7 +1,9 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { getPortalViewer } from '@/lib/portal-viewer'
 import { formatDate, cn } from '@/lib/utils'
-import { CheckCircle, AlertCircle, Upload } from 'lucide-react'
+import { CheckCircle, AlertCircle } from 'lucide-react'
+import DocumentUpload from '@/components/portal/DocumentUpload'
+
+const NO_ID = '00000000-0000-0000-0000-000000000000'
 
 const REQUIRED_DOCUMENTS = [
   { type: 'liability_waiver', title: 'Liability Waiver', description: 'Required before first class' },
@@ -10,14 +12,13 @@ const REQUIRED_DOCUMENTS = [
 ]
 
 export default async function ParentDocumentsPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const { db, effectiveId } = await getPortalViewer('g')
+  const gid = effectiveId ?? NO_ID
 
-  const { data: documents } = await supabase
+  const { data: documents } = await db
     .from('documents')
     .select('*')
-    .eq('guardian_id', user.id)
+    .eq('guardian_id', gid)
 
   const signedTypes = new Set(documents?.filter(d => d.signed_at).map(d => d.document_type) ?? [])
 
@@ -50,13 +51,7 @@ export default async function ParentDocumentsPage() {
                   )}
                 </div>
               </div>
-              {!signed && (
-                <label className="flex items-center gap-2 px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 cursor-pointer transition-colors">
-                  <Upload size={15} />
-                  Upload
-                  <input type="file" className="hidden" accept=".pdf,.jpg,.jpeg,.png" />
-                </label>
-              )}
+              {!signed && <DocumentUpload documentType={doc.type} title={doc.title} />}
             </div>
           )
         })}

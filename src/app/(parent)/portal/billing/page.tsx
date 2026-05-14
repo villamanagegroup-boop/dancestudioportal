@@ -1,15 +1,15 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+import { getPortalViewer } from '@/lib/portal-viewer'
 import { formatCurrency, formatDate, cn, getPaymentStatusColor } from '@/lib/utils'
 
-export default async function ParentBillingPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+const NO_ID = '00000000-0000-0000-0000-000000000000'
 
-  const { data: invoices } = await supabase
+export default async function ParentBillingPage() {
+  const { db, effectiveId } = await getPortalViewer('g')
+  const gid = effectiveId ?? NO_ID
+
+  const { data: invoices } = await db
     .from('invoices').select('*')
-    .eq('guardian_id', user.id)
+    .eq('guardian_id', gid)
     .order('created_at', { ascending: false })
 
   const outstanding = (invoices ?? []).filter(i => i.status === 'pending' || i.status === 'failed')

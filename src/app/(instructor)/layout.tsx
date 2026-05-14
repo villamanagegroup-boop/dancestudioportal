@@ -1,5 +1,9 @@
 import Link from 'next/link'
 import { Home, Calendar, Users, LogOut } from 'lucide-react'
+import { getPortalViewer } from '@/lib/portal-viewer'
+import { createAdminClient } from '@/lib/supabase/admin'
+import PortalSwitcher from '@/components/PortalSwitcher'
+import ViewAsBar from '@/components/portal/ViewAsBar'
 
 const NAV = [
   { href: '/my-classes', icon: Calendar, label: 'My Classes' },
@@ -7,9 +11,30 @@ const NAV = [
   { href: '/students', icon: Users, label: 'Students' },
 ]
 
-export default function InstructorLayout({ children }: { children: React.ReactNode }) {
+export default async function InstructorLayout({ children }: { children: React.ReactNode }) {
+  const viewer = await getPortalViewer('i')
+
+  let people: { id: string; label: string }[] = []
+  if (viewer.canPreview) {
+    const admin = createAdminClient()
+    const { data } = await admin
+      .from('instructors')
+      .select('id, first_name, last_name')
+      .eq('active', true)
+      .order('last_name')
+    people = (data ?? []).map(i => ({
+      id: i.id,
+      label: `${i.first_name ?? ''} ${i.last_name ?? ''}`.trim() || 'Instructor',
+    }))
+  }
+
+  const switcherRole = viewer.canPreview ? 'admin' : viewer.role ?? 'instructor'
+
   return (
     <div className="min-h-screen pb-16 sm:pb-0">
+      {viewer.canPreview && (
+        <ViewAsBar kind="i" people={people} currentId={viewer.effectiveId} />
+      )}
       <header className="glass rounded-none border-x-0 border-t-0 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -31,14 +56,17 @@ export default function InstructorLayout({ children }: { children: React.ReactNo
               </Link>
             ))}
           </nav>
-          <Link
-            href="/login"
-            className="flex items-center gap-1.5 text-sm"
-            style={{ color: 'var(--ink-3)' }}
-          >
-            <LogOut size={15} />
-            <span className="hidden sm:inline">Sign out</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <PortalSwitcher role={switcherRole} current="instructor" />
+            <Link
+              href="/login"
+              className="flex items-center gap-1.5 text-sm"
+              style={{ color: 'var(--ink-3)' }}
+            >
+              <LogOut size={15} />
+              <span className="hidden sm:inline">Sign out</span>
+            </Link>
+          </div>
         </div>
       </header>
 

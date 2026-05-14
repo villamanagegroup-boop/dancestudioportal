@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Plus, Tent, ChevronUp, ChevronDown } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import CampFormModal from '@/components/forms/CampFormModal'
@@ -28,6 +29,7 @@ interface Props {
   camps: Camp[]
   instructors: { id: string; first_name: string; last_name: string }[]
   rooms: { id: string; name: string }[]
+  regCounts: Record<string, number>
 }
 
 type SortKey = 'name' | 'start' | 'price' | 'capacity'
@@ -46,7 +48,7 @@ function statusOf(camp: Camp) {
   return { label: 'Active', cls: 'bg-green-100 text-green-700' }
 }
 
-export default function CampsTable({ camps, instructors, rooms }: Props) {
+export default function CampsTable({ camps, instructors, rooms, regCounts }: Props) {
   const [showModal, setShowModal] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('start')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -110,7 +112,9 @@ export default function CampsTable({ camps, instructors, rooms }: Props) {
                   return (
                     <tr key={camp.id} className="group hover:bg-gray-50">
                       <td className="px-5 py-3">
-                        <p className="text-sm font-medium text-gray-900">{camp.name}</p>
+                        <Link href={`/camps/${camp.id}`} className="text-sm font-medium text-gray-900 hover:text-studio-700">
+                          {camp.name}
+                        </Link>
                         {camp.description && <p className="text-xs text-gray-400 mt-0.5 truncate max-w-xs">{camp.description}</p>}
                       </td>
                       <td className="px-5 py-3 text-sm text-gray-600">
@@ -119,7 +123,25 @@ export default function CampsTable({ camps, instructors, rooms }: Props) {
                         {new Date(camp.end_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </td>
                       <td className="px-5 py-3 text-sm font-medium text-gray-900">{formatCurrency(Number(camp.price))}</td>
-                      <td className="px-5 py-3 text-sm text-gray-600">{camp.max_capacity}</td>
+                      <td className="px-5 py-3">
+                        {(() => {
+                          const count = regCounts[camp.id] ?? 0
+                          const pct = camp.max_capacity > 0
+                            ? Math.min(100, Math.round((count / camp.max_capacity) * 100))
+                            : 0
+                          return (
+                            <div className="w-28">
+                              <div className="text-xs text-gray-600 mb-1">{count} / {camp.max_capacity}</div>
+                              <div className="h-1.5 rounded-full bg-gray-100 overflow-hidden">
+                                <div
+                                  className={pct >= 100 ? 'h-full bg-red-500' : 'h-full bg-studio-500'}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })()}
+                      </td>
                       <td className="px-5 py-3 text-sm text-gray-500">
                         {camp.age_min && camp.age_max ? `${camp.age_min}–${camp.age_max} yrs` : camp.age_min ? `${camp.age_min}+ yrs` : '—'}
                       </td>

@@ -5,16 +5,23 @@ import CampsTable from '@/components/admin/CampsTable'
 export default async function CampsPage() {
   const supabase = createAdminClient()
 
-  const [{ data: camps }, { data: instructors }, { data: rooms }] = await Promise.all([
-    supabase.from('camps').select(`
-      id, name, description, start_date, end_date, start_time, end_time,
-      max_capacity, price, age_min, age_max, active, created_at,
-      instructor:instructors(first_name, last_name),
-      room:rooms(name)
-    `).order('start_date', { ascending: false }),
-    supabase.from('instructors').select('id, first_name, last_name').eq('active', true),
-    supabase.from('rooms').select('id, name').eq('active', true),
-  ])
+  const [{ data: camps }, { data: instructors }, { data: rooms }, { data: regs }] =
+    await Promise.all([
+      supabase.from('camps').select(`
+        id, name, description, start_date, end_date, start_time, end_time,
+        max_capacity, price, age_min, age_max, registration_open, active, created_at,
+        instructor:instructors(first_name, last_name),
+        room:rooms(name)
+      `).order('start_date', { ascending: false }),
+      supabase.from('instructors').select('id, first_name, last_name').eq('active', true),
+      supabase.from('rooms').select('id, name').eq('active', true),
+      supabase.from('camp_registrations').select('camp_id').eq('status', 'registered'),
+    ])
+
+  const regCounts: Record<string, number> = {}
+  for (const r of regs ?? []) {
+    regCounts[r.camp_id] = (regCounts[r.camp_id] ?? 0) + 1
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -24,6 +31,7 @@ export default async function CampsPage() {
           camps={(camps ?? []) as any}
           instructors={instructors ?? []}
           rooms={rooms ?? []}
+          regCounts={regCounts}
         />
       </div>
     </div>

@@ -151,12 +151,73 @@ create table camps (
   end_time time,
   max_capacity integer default 20,
   price numeric(10,2) not null,
+  deposit_amount numeric(10,2),
   age_min integer,
   age_max integer,
   instructor_id uuid references instructors(id) on delete set null,
   room_id uuid references rooms(id) on delete set null,
+  registration_open boolean not null default true,
+  what_to_bring text,
+  parent_notes text,
   active boolean default true,
   created_at timestamptz default now()
+);
+
+-- CAMP REGISTRATIONS
+create table camp_registrations (
+  id uuid primary key default uuid_generate_v4(),
+  camp_id uuid not null references camps(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  status text not null default 'registered'
+    check (status in ('registered', 'waitlisted', 'cancelled', 'completed')),
+  payment_status text not null default 'unpaid'
+    check (payment_status in ('unpaid', 'deposit', 'paid', 'refunded', 'waived')),
+  amount_paid numeric(10,2) not null default 0,
+  waitlist_position integer,
+  notes text,
+  archived boolean not null default false,
+  registered_at timestamptz not null default now(),
+  unique(camp_id, student_id)
+);
+
+-- CAMP ATTENDANCE (per-day across the camp's date range)
+create table camp_attendance (
+  id uuid primary key default uuid_generate_v4(),
+  camp_id uuid not null references camps(id) on delete cascade,
+  student_id uuid not null references students(id) on delete cascade,
+  attend_date date not null,
+  present boolean not null default false,
+  checked_in_at timestamptz,
+  notes text,
+  unique(camp_id, student_id, attend_date)
+);
+
+-- CAMP ITINERARY (day-by-day agenda)
+create table camp_itinerary (
+  id uuid primary key default uuid_generate_v4(),
+  camp_id uuid not null references camps(id) on delete cascade,
+  day_date date not null,
+  start_time time,
+  end_time time,
+  title text not null,
+  location text,
+  notes text,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- CAMP FILES (packing lists, schedules, waivers, music)
+create table camp_files (
+  id uuid primary key default uuid_generate_v4(),
+  camp_id uuid not null references camps(id) on delete cascade,
+  name text not null,
+  category text not null default 'document'
+    check (category in ('packing_list', 'schedule', 'waiver', 'music', 'document', 'other')),
+  storage_path text not null,
+  size_bytes bigint,
+  mime_type text,
+  uploaded_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
 );
 
 create table parties (
@@ -170,6 +231,8 @@ create table parties (
   guest_count integer,
   package text,
   price numeric(10,2) default 0,
+  deposit_amount numeric(10,2),
+  amount_paid numeric(10,2) not null default 0,
   deposit_paid boolean default false,
   status text not null default 'inquiry',
   notes text,
@@ -177,6 +240,30 @@ create table parties (
   guardian_id uuid references profiles(id) on delete set null,
   student_id uuid references students(id) on delete set null,
   created_at timestamptz default now()
+);
+
+-- PARTY PLANNING CHECKLIST
+create table party_tasks (
+  id uuid primary key default uuid_generate_v4(),
+  party_id uuid not null references parties(id) on delete cascade,
+  title text not null,
+  done boolean not null default false,
+  sort_order integer not null default 0,
+  created_at timestamptz not null default now()
+);
+
+-- PARTY FILES (contracts, invoices, floor plans)
+create table party_files (
+  id uuid primary key default uuid_generate_v4(),
+  party_id uuid not null references parties(id) on delete cascade,
+  name text not null,
+  category text not null default 'document'
+    check (category in ('contract', 'invoice', 'agreement', 'floor_plan', 'document', 'other')),
+  storage_path text not null,
+  size_bytes bigint,
+  mime_type text,
+  uploaded_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
 );
 
 create table bookings (
@@ -208,6 +295,7 @@ create table enrollments (
   dropped_at timestamptz,
   waitlist_position integer,
   notes text,
+  archived boolean not null default false,
   stripe_subscription_id text,
   unique(student_id, class_id, season_id)
 );
@@ -376,6 +464,31 @@ alter table class_files enable row level security;
 create policy "admins_all_class_files" on class_files for all using (
   exists (select 1 from profiles where id = auth.uid() and role = 'admin')
 );
+alter table camp_registrations enable row level security;
+create policy "admins_all_camp_registrations" on camp_registrations for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+alter table camp_attendance enable row level security;
+create policy "admins_all_camp_attendance" on camp_attendance for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+alter table camp_itinerary enable row level security;
+create policy "admins_all_camp_itinerary" on camp_itinerary for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+create policy "camp_itinerary_readable" on camp_itinerary for select using (true);
+alter table camp_files enable row level security;
+create policy "admins_all_camp_files" on camp_files for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+alter table party_tasks enable row level security;
+create policy "admins_all_party_tasks" on party_tasks for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+alter table party_files enable row level security;
+create policy "admins_all_party_files" on party_files for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
 alter table calendar_events enable row level security;
 create policy "admins_all_calendar_events" on calendar_events for all using (
   exists (select 1 from profiles where id = auth.uid() and role = 'admin')
@@ -428,6 +541,33 @@ create policy "admins_all_enrollments" on enrollments for all using (
 create policy "guardians_own_invoices" on invoices for select using (guardian_id = auth.uid());
 create policy "admins_all_invoices" on invoices for all using (
   exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+create policy "guardians_own_documents" on documents for select using (guardian_id = auth.uid());
+create policy "admins_all_documents" on documents for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+create policy "guardians_read_announcements" on communications for select using (
+  target_all = true
+  or exists (
+    select 1 from enrollments e
+    join guardian_students gs on gs.student_id = e.student_id
+    where gs.guardian_id = auth.uid() and e.class_id = communications.target_class_id
+  )
+);
+create policy "admins_all_communications" on communications for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+create policy "guardians_own_camp_registrations" on camp_registrations for select using (
+  exists (
+    select 1 from guardian_students gs
+    where gs.guardian_id = auth.uid() and gs.student_id = camp_registrations.student_id
+  )
+);
+create policy "guardians_own_attendance" on attendance for select using (
+  exists (
+    select 1 from guardian_students gs
+    where gs.guardian_id = auth.uid() and gs.student_id = attendance.student_id
+  )
 );
 
 -- FUNCTIONS
