@@ -1,143 +1,197 @@
 'use client'
 
 import { useState } from 'react'
-import { formatTime, formatDate, getAgeFromDob, getEnrollmentStatusColor, cn } from '@/lib/utils'
-import { X } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { Archive, ArchiveRestore, Trash2, Settings, Users, ClipboardCheck, MessageSquare, FolderOpen } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import ClassSettingsTab from '@/components/admin/ClassSettingsTab'
+import ClassRosterTab from '@/components/admin/ClassRosterTab'
+import ClassAttendanceTab from '@/components/admin/ClassAttendanceTab'
+import ClassCommsTab from '@/components/admin/ClassCommsTab'
+import ClassFilesTab from '@/components/admin/ClassFilesTab'
+
+interface Option { id: string; name: string }
+interface InstructorOption { id: string; first_name: string; last_name: string }
+interface StudentOption { id: string; first_name: string; last_name: string; date_of_birth: string }
+
+export interface Enrollment {
+  id: string
+  status: string
+  enrolled_at: string
+  student: StudentOption | null
+}
+
+export interface ClassSession {
+  id: string
+  session_date: string
+  notes: string | null
+  attendance: { student_id: string; present: boolean }[]
+}
+
+export interface ClassComm {
+  id: string
+  subject: string | null
+  body: string
+  comm_type: string
+  sent_at: string | null
+  created_at: string
+}
+
+export interface ClassFile {
+  id: string
+  name: string
+  category: string
+  storage_path: string
+  size_bytes: number | null
+  mime_type: string | null
+  created_at: string
+  url: string | null
+}
 
 interface Props {
   cls: any
-  enrollments: Array<{
-    id: string
-    status: string
-    enrolled_at: string
-    student: { id: string; first_name: string; last_name: string; date_of_birth: string } | null
-  }>
+  enrollments: Enrollment[]
+  instructors: InstructorOption[]
+  rooms: Option[]
+  classTypes: { id: string; name: string; style: string }[]
+  seasons: Option[]
+  students: StudentOption[]
+  sessions: ClassSession[]
+  communications: ClassComm[]
+  files: ClassFile[]
 }
 
-export default function ClassDetail({ cls, enrollments }: Props) {
-  const [showAttendance, setShowAttendance] = useState(false)
-  const [attendance, setAttendance] = useState<Record<string, boolean>>({})
+type Tab = 'settings' | 'roster' | 'attendance' | 'communication' | 'files'
 
-  const activeEnrollments = enrollments.filter(e => e.status === 'active')
+const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
+  { key: 'settings', label: 'Settings', icon: <Settings size={15} /> },
+  { key: 'roster', label: 'Roster', icon: <Users size={15} /> },
+  { key: 'attendance', label: 'Attendance', icon: <ClipboardCheck size={15} /> },
+  { key: 'communication', label: 'Communication', icon: <MessageSquare size={15} /> },
+  { key: 'files', label: 'Files', icon: <FolderOpen size={15} /> },
+]
 
-  function toggleAttendance(studentId: string) {
-    setAttendance(prev => ({ ...prev, [studentId]: !prev[studentId] }))
+export default function ClassDetail({
+  cls, enrollments, instructors, rooms, classTypes, seasons, students, sessions, communications, files,
+}: Props) {
+  const router = useRouter()
+  const [tab, setTab] = useState<Tab>('settings')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function toggleArchive() {
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/classes/${cls.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ active: !cls.active }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error ?? 'Failed to update class')
+      }
+      router.refresh()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function remove() {
+    if (!confirm('Permanently delete this class? This cannot be undone.')) return
+    setBusy(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/classes/${cls.id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error ?? 'Failed to delete class')
+      }
+      router.push('/classes')
+    } catch (err: any) {
+      setError(err.message)
+      setBusy(false)
+    }
   }
 
   return (
-    <>
-      <div className="space-y-6">
-        {/* Class info */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <div className="flex items-start justify-between">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 flex-1">
-              <Info label="Day" value={cls.day_of_week?.charAt(0).toUpperCase() + cls.day_of_week?.slice(1)} />
-              <Info label="Time" value={`${formatTime(cls.start_time)} – ${formatTime(cls.end_time)}`} />
-              <Info label="Instructor" value={cls.instructor ? `${cls.instructor.first_name} ${cls.instructor.last_name}` : '—'} />
-              <Info label="Room" value={cls.room?.name ?? '—'} />
-              <Info label="Max Students" value={String(cls.max_students)} />
-              <Info label="Monthly Tuition" value={`$${cls.monthly_tuition}`} />
-              <Info label="Registration Fee" value={`$${cls.registration_fee}`} />
-              <Info label="Enrolled" value={String(activeEnrollments.length)} />
-            </div>
-          </div>
-        </div>
-
-        {/* Roster */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Class Roster ({enrollments.length})</h2>
-            <button
-              onClick={() => setShowAttendance(true)}
-              className="px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 transition-colors"
-            >
-              Take Attendance
-            </button>
-          </div>
-          {enrollments.length === 0 ? (
-            <div className="py-12 text-center text-gray-400 text-sm">No students enrolled</div>
-          ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Student</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Age</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Enrolled</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {enrollments.map(e => (
-                  <tr key={e.id} className="hover:bg-gray-50">
-                    <td className="px-5 py-3 text-sm font-medium text-gray-900">
-                      {e.student ? `${e.student.first_name} ${e.student.last_name}` : '—'}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-gray-600">
-                      {e.student ? `${getAgeFromDob(e.student.date_of_birth)} yrs` : '—'}
-                    </td>
-                    <td className="px-5 py-3 text-sm text-gray-500">{formatDate(e.enrolled_at)}</td>
-                    <td className="px-5 py-3">
-                      <span className={cn('text-xs font-medium px-2 py-1 rounded-full', getEnrollmentStatusColor(e.status))}>
-                        {e.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="space-y-6">
+      {/* Action bar */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          {!cls.active && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Archived</span>
           )}
+          {!cls.visible && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Hidden</span>
+          )}
+          {!cls.registration_open && (
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-rose-100 text-rose-700">Registration closed</span>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleArchive}
+            disabled={busy}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {cls.active ? <Archive size={14} /> : <ArchiveRestore size={14} />}
+            {cls.active ? 'Archive' : 'Restore'}
+          </button>
+          <button
+            onClick={remove}
+            disabled={busy}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-red-200 text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+          >
+            <Trash2 size={14} /> Delete
+          </button>
         </div>
       </div>
 
-      {/* Attendance Modal */}
-      {showAttendance && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="text-lg font-semibold text-gray-900">Take Attendance</h2>
-              <button onClick={() => setShowAttendance(false)} className="text-gray-400 hover:text-gray-600">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-4 space-y-2 max-h-96 overflow-y-auto">
-              {activeEnrollments.map(e => (
-                <label key={e.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={!!attendance[e.student?.id ?? '']}
-                    onChange={() => toggleAttendance(e.student?.id ?? '')}
-                    className="w-4 h-4 rounded text-studio-600 focus:ring-studio-500"
-                  />
-                  <span className="text-sm font-medium text-gray-900">
-                    {e.student ? `${e.student.first_name} ${e.student.last_name}` : '—'}
-                  </span>
-                </label>
-              ))}
-              {activeEnrollments.length === 0 && (
-                <p className="text-gray-400 text-sm text-center py-4">No active students</p>
-              )}
-            </div>
-            <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
-              <button onClick={() => setShowAttendance(false)} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-              <button
-                onClick={() => setShowAttendance(false)}
-                className="px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700"
-              >
-                Save Attendance
-              </button>
-            </div>
-          </div>
-        </div>
+      {error && (
+        <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
       )}
-    </>
-  )
-}
 
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</p>
-      <p className="text-sm font-semibold text-gray-900 mt-0.5">{value}</p>
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-gray-200">
+        {TABS.map(t => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            className={cn(
+              'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors',
+              tab === t.key
+                ? 'border-studio-600 text-studio-700'
+                : 'border-transparent text-gray-500 hover:text-gray-700',
+            )}
+          >
+            {t.icon}
+            {t.label}
+            {t.key === 'roster' && (
+              <span className="text-xs text-gray-400">({enrollments.filter(e => e.status === 'active').length})</span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {tab === 'settings' && (
+        <ClassSettingsTab cls={cls} instructors={instructors} rooms={rooms} classTypes={classTypes} seasons={seasons} />
+      )}
+      {tab === 'roster' && (
+        <ClassRosterTab classId={cls.id} enrollments={enrollments} students={students} />
+      )}
+      {tab === 'attendance' && (
+        <ClassAttendanceTab classId={cls.id} enrollments={enrollments} sessions={sessions} />
+      )}
+      {tab === 'communication' && (
+        <ClassCommsTab classId={cls.id} communications={communications} />
+      )}
+      {tab === 'files' && (
+        <ClassFilesTab classId={cls.id} files={files} />
+      )}
     </div>
   )
 }

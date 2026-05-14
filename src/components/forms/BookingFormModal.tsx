@@ -7,9 +7,10 @@ import { useRouter } from 'next/navigation'
 interface Props {
   onClose: () => void
   rooms: { id: string; name: string }[]
+  defaults?: Partial<Record<string, string>>
 }
 
-export default function BookingFormModal({ onClose, rooms }: Props) {
+export default function BookingFormModal({ onClose, rooms, defaults }: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -17,6 +18,7 @@ export default function BookingFormModal({ onClose, rooms }: Props) {
     title: '', contact_name: '', contact_email: '', contact_phone: '',
     booking_date: '', start_time: '', end_time: '',
     booking_type: 'rental', price: '', room_id: '', status: 'confirmed', notes: '',
+    ...defaults,
   })
 
   function set(field: string, value: string) { setForm(f => ({ ...f, [field]: value })) }

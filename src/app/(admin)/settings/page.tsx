@@ -4,10 +4,11 @@ import SettingsPanel from '@/components/admin/SettingsPanel'
 
 export default async function SettingsPage() {
   const supabase = createAdminClient()
-  const [{ data: seasons }, { data: rooms }, { data: classTypes }] = await Promise.all([
+  const [{ data: seasons }, { data: rooms }, { data: classTypes }, { data: studioHours }] = await Promise.all([
     supabase.from('seasons').select('*').order('start_date', { ascending: false }),
     supabase.from('rooms').select('*').order('name'),
     supabase.from('class_types').select('*').order('name'),
+    supabase.from('studio_hours').select('*'),
   ])
 
   return (
@@ -18,6 +19,7 @@ export default async function SettingsPage() {
           seasons={seasons ?? []}
           rooms={rooms ?? []}
           classTypes={classTypes ?? []}
+          studioHours={studioHours ?? []}
         />
       </div>
     </div>

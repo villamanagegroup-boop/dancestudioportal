@@ -44,6 +44,24 @@ export async function sendInvoiceReminder({
   })
 }
 
+export async function sendClassAnnouncement({
+  to, subject, body, className,
+}: {
+  to: string; subject: string; body: string; className: string
+}) {
+  await resend.emails.send({
+    from: process.env.RESEND_FROM_EMAIL!,
+    to,
+    subject,
+    html: `
+      <h2>${subject}</h2>
+      <p style="color:#666;font-size:13px;">Regarding <strong>${className}</strong></p>
+      <div>${body.replace(/\n/g, '<br>')}</div>
+      <p>— Capital Core Dance Studio</p>
+    `,
+  })
+}
+
 export async function sendPaymentFailedEmail({
   to, guardianName, amount,
 }: {

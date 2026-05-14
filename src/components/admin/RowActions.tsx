@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { MoreVertical, Archive, ArchiveRestore, Trash2 } from 'lucide-react'
 
@@ -101,10 +102,10 @@ export default function RowActions({ endpoint, entityLabel, archived, archivePat
       >
         <MoreVertical size={16} />
       </button>
-      {open && coords && (
+      {open && coords && typeof document !== 'undefined' && createPortal(
         <div
           ref={menuRef}
-          style={{ position: 'fixed', top: coords.top, right: coords.right, zIndex: 50 }}
+          style={{ position: 'fixed', top: coords.top, right: coords.right, zIndex: 1000 }}
           className="w-44 rounded-lg border border-gray-100 bg-white shadow-lg py-1"
         >
           <button
@@ -125,7 +126,8 @@ export default function RowActions({ endpoint, entityLabel, archived, archivePat
             <Trash2 size={14} />
             Delete
           </button>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

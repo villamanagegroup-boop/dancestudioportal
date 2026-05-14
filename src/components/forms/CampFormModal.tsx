@@ -8,9 +8,10 @@ interface Props {
   onClose: () => void
   instructors: { id: string; first_name: string; last_name: string }[]
   rooms: { id: string; name: string }[]
+  defaults?: Partial<Record<string, string>>
 }
 
-export default function CampFormModal({ onClose, instructors, rooms }: Props) {
+export default function CampFormModal({ onClose, instructors, rooms, defaults }: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -18,6 +19,7 @@ export default function CampFormModal({ onClose, instructors, rooms }: Props) {
     name: '', description: '', start_date: '', end_date: '',
     start_time: '', end_time: '', max_capacity: '20', price: '',
     age_min: '', age_max: '', instructor_id: '', room_id: '',
+    ...defaults,
   })
 
   function set(field: string, value: string) {

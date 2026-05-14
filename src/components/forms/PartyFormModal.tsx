@@ -7,9 +7,10 @@ import { useRouter } from 'next/navigation'
 interface Props {
   onClose: () => void
   rooms: { id: string; name: string }[]
+  defaults?: Partial<Record<string, string>>
 }
 
-export default function PartyFormModal({ onClose, rooms }: Props) {
+export default function PartyFormModal({ onClose, rooms, defaults }: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -18,6 +19,7 @@ export default function PartyFormModal({ onClose, rooms }: Props) {
     event_date: '', start_time: '', end_time: '',
     guest_count: '', package: '', price: '',
     room_id: '', notes: '', status: 'inquiry',
+    ...defaults,
   })
 
   function set(field: string, value: string) { setForm(f => ({ ...f, [field]: value })) }

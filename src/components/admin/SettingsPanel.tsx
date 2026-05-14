@@ -17,20 +17,58 @@ interface ClassType {
   id: string; name: string; style: string; level: string
   min_age: number | null; max_age: number | null; color: string; active: boolean
 }
+interface StudioHour {
+  day_of_week: string; is_open: boolean; open_time: string; close_time: string
+}
 
 interface Props {
   seasons: Season[]
   rooms: Room[]
   classTypes: ClassType[]
+  studioHours: StudioHour[]
 }
 
-type Tab = 'Studio' | 'Seasons' | 'Rooms' | 'Class Types'
-const TABS: Tab[] = ['Studio', 'Seasons', 'Rooms', 'Class Types']
+type Tab = 'Studio' | 'Hours' | 'Seasons' | 'Rooms' | 'Class Types'
+const TABS: Tab[] = ['Studio', 'Hours', 'Seasons', 'Rooms', 'Class Types']
+
+const DAY_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
 const fieldClass = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-studio-500 focus:ring-1 focus:ring-studio-500'
 
-export default function SettingsPanel({ seasons, rooms, classTypes }: Props) {
+export default function SettingsPanel({ seasons, rooms, classTypes, studioHours }: Props) {
   const [activeTab, setActiveTab] = useState<Tab>('Studio')
+  const [hours, setHours] = useState<StudioHour[]>(() =>
+    [...studioHours].sort((a, b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week)),
+  )
+  const [savingHours, setSavingHours] = useState(false)
+  const [hoursSaved, setHoursSaved] = useState(false)
+  const [hoursError, setHoursError] = useState('')
+
+  function setHour(day: string, patch: Partial<StudioHour>) {
+    setHours(hs => hs.map(h => (h.day_of_week === day ? { ...h, ...patch } : h)))
+    setHoursSaved(false)
+  }
+
+  async function saveHours() {
+    setSavingHours(true)
+    setHoursError('')
+    try {
+      const res = await fetch('/api/studio-hours', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ hours }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error ?? 'Failed to save hours')
+      }
+      setHoursSaved(true)
+    } catch (err: any) {
+      setHoursError(err.message)
+    } finally {
+      setSavingHours(false)
+    }
+  }
   const [studioForm, setStudioForm] = useState({
     name: 'Capital Core Dance Studio',
     email: 'info@capitalcoredance.com',
@@ -280,6 +318,59 @@ export default function SettingsPanel({ seasons, rooms, classTypes }: Props) {
               </tbody>
             </table>
           )}
+        </div>
+      )}
+
+      {activeTab === 'Hours' && (
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden max-w-2xl">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900">Studio Hours</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Sets the time range shown on the calendar</p>
+          </div>
+          <div className="p-5 space-y-2">
+            {hours.map(h => (
+              <div key={h.day_of_week} className="flex items-center gap-3 py-1.5">
+                <span className="w-28 text-sm font-medium text-gray-700 capitalize">{h.day_of_week}</span>
+                <label className="flex items-center gap-1.5 text-sm text-gray-600 w-24">
+                  <input
+                    type="checkbox"
+                    checked={h.is_open}
+                    onChange={e => setHour(h.day_of_week, { is_open: e.target.checked })}
+                    className="w-4 h-4 rounded text-studio-600 focus:ring-studio-500"
+                  />
+                  {h.is_open ? 'Open' : 'Closed'}
+                </label>
+                <input
+                  type="time"
+                  value={h.open_time?.slice(0, 5) ?? ''}
+                  disabled={!h.is_open}
+                  onChange={e => setHour(h.day_of_week, { open_time: e.target.value })}
+                  className={fieldClass + ' max-w-32 disabled:opacity-40'}
+                />
+                <span className="text-gray-400 text-sm">to</span>
+                <input
+                  type="time"
+                  value={h.close_time?.slice(0, 5) ?? ''}
+                  disabled={!h.is_open}
+                  onChange={e => setHour(h.day_of_week, { close_time: e.target.value })}
+                  className={fieldClass + ' max-w-32 disabled:opacity-40'}
+                />
+              </div>
+            ))}
+            {hoursError && (
+              <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{hoursError}</div>
+            )}
+          </div>
+          <div className="px-5 py-4 border-t border-gray-100 flex items-center justify-end gap-3">
+            {hoursSaved && !savingHours && <span className="text-sm text-green-600">Saved</span>}
+            <button
+              onClick={saveHours}
+              disabled={savingHours}
+              className="px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 disabled:opacity-50"
+            >
+              {savingHours ? 'Saving…' : 'Save Hours'}
+            </button>
+          </div>
         </div>
       )}
     </div>

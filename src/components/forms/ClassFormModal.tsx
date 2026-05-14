@@ -13,18 +13,19 @@ interface Props {
   rooms: { id: string; name: string }[]
   classTypes: { id: string; name: string; style: string }[]
   seasons: { id: string; name: string }[]
+  defaults?: Partial<ClassFormData>
 }
 
 const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday']
 
-export default function ClassFormModal({ onClose, instructors, rooms, classTypes, seasons }: Props) {
+export default function ClassFormModal({ onClose, instructors, rooms, classTypes, seasons, defaults }: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
   const { register, handleSubmit, formState: { errors } } = useForm<ClassFormData>({
     resolver: zodResolver(classSchema) as any,
-    defaultValues: { max_students: 15, registration_fee: 0 },
+    defaultValues: { max_students: 15, registration_fee: 0, ...defaults },
   })
 
   async function onSubmit(data: ClassFormData) {

@@ -109,17 +109,32 @@ create table seasons (
 -- CLASSES
 create table classes (
   id uuid primary key default uuid_generate_v4(),
-  season_id uuid not null references seasons(id) on delete cascade,
+  season_id uuid references seasons(id) on delete cascade,
   class_type_id uuid not null references class_types(id),
   instructor_id uuid references instructors(id),
   room_id uuid references rooms(id),
   name text not null,
+  description text,
   day_of_week day_of_week not null,
   start_time time not null,
   end_time time not null,
+  start_date date,
+  end_date date,
+  registration_start date,
+  registration_end date,
   max_students integer default 15,
   monthly_tuition numeric(10,2) not null,
   registration_fee numeric(10,2) default 0,
+  billing_type text not null default 'monthly' check (billing_type in ('monthly', 'flat')),
+  flat_amount numeric(10,2),
+  allow_discounts boolean not null default true,
+  age_min integer,
+  age_max integer,
+  gender text not null default 'any' check (gender in ('any', 'female', 'male', 'non-binary')),
+  visible boolean not null default true,
+  registration_open boolean not null default true,
+  internal_registration_only boolean not null default false,
+  notes text,
   stripe_price_id text,
   active boolean default true,
   created_at timestamptz default now()
@@ -187,7 +202,7 @@ create table enrollments (
   id uuid primary key default uuid_generate_v4(),
   student_id uuid not null references students(id) on delete cascade,
   class_id uuid not null references classes(id) on delete cascade,
-  season_id uuid not null references seasons(id),
+  season_id uuid references seasons(id),
   status enrollment_status not null default 'pending',
   enrolled_at timestamptz default now(),
   dropped_at timestamptz,
@@ -218,6 +233,46 @@ create table attendance (
   checked_in_at timestamptz,
   notes text,
   unique(session_id, student_id)
+);
+
+-- CLASS FILES (costumes, music, documents)
+create table class_files (
+  id uuid primary key default uuid_generate_v4(),
+  class_id uuid not null references classes(id) on delete cascade,
+  name text not null,
+  category text not null default 'document'
+    check (category in ('costume', 'music', 'document', 'other')),
+  storage_path text not null,
+  size_bytes bigint,
+  mime_type text,
+  uploaded_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+-- CALENDAR EVENTS (meetings, blackouts, placeholders, one-off events)
+create table calendar_events (
+  id uuid primary key default uuid_generate_v4(),
+  title text not null,
+  event_type text not null default 'event'
+    check (event_type in ('event', 'meeting', 'blackout', 'placeholder')),
+  start_date date not null,
+  end_date date,
+  all_day boolean not null default false,
+  start_time time,
+  end_time time,
+  room_id uuid references rooms(id) on delete set null,
+  color text,
+  notes text,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+
+-- STUDIO HOURS (drives the calendar's visible range)
+create table studio_hours (
+  day_of_week day_of_week primary key,
+  is_open boolean not null default true,
+  open_time time not null default '09:00',
+  close_time time not null default '21:00'
 );
 
 -- BILLING
@@ -315,6 +370,30 @@ alter table attendance enable row level security;
 alter table camps enable row level security;
 alter table parties enable row level security;
 alter table bookings enable row level security;
+alter table class_files enable row level security;
+create policy "admins_all_class_files" on class_files for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+alter table calendar_events enable row level security;
+create policy "admins_all_calendar_events" on calendar_events for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+alter table studio_hours enable row level security;
+create policy "admins_all_studio_hours" on studio_hours for all using (
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
+);
+create policy "studio_hours_readable" on studio_hours for select using (true);
+
+-- SEED studio hours
+insert into studio_hours (day_of_week, is_open, open_time, close_time) values
+  ('monday',    true,  '09:00', '21:00'),
+  ('tuesday',   true,  '09:00', '21:00'),
+  ('wednesday', true,  '09:00', '21:00'),
+  ('thursday',  true,  '09:00', '21:00'),
+  ('friday',    true,  '09:00', '21:00'),
+  ('saturday',  true,  '09:00', '17:00'),
+  ('sunday',    false, '09:00', '17:00')
+on conflict (day_of_week) do nothing;
 
 create policy "users_own_profile" on profiles for all using (auth.uid() = id);
 create policy "camps_active_readable" on camps for select using (active = true);
