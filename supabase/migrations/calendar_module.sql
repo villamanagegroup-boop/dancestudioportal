@@ -27,6 +27,12 @@ create table if not exists calendar_events (
 
 create index if not exists calendar_events_dates on calendar_events(start_date, end_date);
 
+-- Recurrence (phase 2): weekly-repeating calendar events
+alter table calendar_events
+  add column if not exists recurrence text not null default 'none'
+    check (recurrence in ('none', 'weekly')),
+  add column if not exists recurrence_end date;
+
 alter table calendar_events enable row level security;
 drop policy if exists calendar_events_admin on calendar_events;
 create policy calendar_events_admin on calendar_events for all using (

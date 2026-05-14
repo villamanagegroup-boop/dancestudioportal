@@ -7,7 +7,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const supabase = createAdminClient()
 
   const update: Record<string, unknown> = {}
-  if ('status' in body) update.status = body.status
+  for (const f of ['status', 'booking_date', 'start_time', 'end_time'] as const) {
+    if (f in body) update[f] = body[f]
+  }
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: 'no fields to update' }, { status: 400 })
   }

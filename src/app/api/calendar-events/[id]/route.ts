@@ -4,9 +4,12 @@ import { NextRequest, NextResponse } from 'next/server'
 const FIELDS = [
   'title', 'event_type', 'start_date', 'end_date',
   'all_day', 'start_time', 'end_time', 'room_id', 'color', 'notes',
+  'recurrence', 'recurrence_end',
 ] as const
 
-const NULLABLE_WHEN_BLANK = new Set(['end_date', 'start_time', 'end_time', 'room_id', 'color', 'notes'])
+const NULLABLE_WHEN_BLANK = new Set([
+  'end_date', 'start_time', 'end_time', 'room_id', 'color', 'notes', 'recurrence_end',
+])
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

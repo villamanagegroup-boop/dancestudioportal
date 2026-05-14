@@ -15,6 +15,8 @@ interface CalendarEvent {
   end_time: string | null
   room_id: string | null
   notes: string | null
+  recurrence?: string
+  recurrence_end?: string | null
 }
 
 interface Props {
@@ -48,6 +50,8 @@ export default function CalendarEventModal({ onClose, rooms, event, defaults }: 
     end_time: event?.end_time?.slice(0, 5) ?? '',
     room_id: event?.room_id ?? '',
     notes: event?.notes ?? '',
+    recurrence: event?.recurrence ?? 'none',
+    recurrence_end: event?.recurrence_end ?? '',
   })
 
   function set(key: keyof typeof form, value: string | boolean) {
@@ -158,6 +162,22 @@ export default function CalendarEventModal({ onClose, rooms, event, defaults }: 
               <option value="">None / whole studio</option>
               {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Repeats</label>
+              <select value={form.recurrence} onChange={e => set('recurrence', e.target.value)} className={field}>
+                <option value="none">Does not repeat</option>
+                <option value="weekly">Weekly</option>
+              </select>
+            </div>
+            {form.recurrence === 'weekly' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Repeat until</label>
+                <input type="date" value={form.recurrence_end} onChange={e => set('recurrence_end', e.target.value)} className={field} />
+              </div>
+            )}
           </div>
 
           <div>

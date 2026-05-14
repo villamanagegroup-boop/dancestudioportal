@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
       room_id: body.room_id || null,
       color: body.color || null,
       notes: body.notes || null,
+      recurrence: body.recurrence === 'weekly' ? 'weekly' : 'none',
+      recurrence_end: body.recurrence === 'weekly' ? body.recurrence_end || null : null,
     })
     .select()
     .single()

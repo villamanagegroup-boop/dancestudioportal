@@ -263,6 +263,8 @@ create table calendar_events (
   room_id uuid references rooms(id) on delete set null,
   color text,
   notes text,
+  recurrence text not null default 'none' check (recurrence in ('none', 'weekly')),
+  recurrence_end date,
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now()
 );
