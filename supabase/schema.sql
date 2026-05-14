@@ -19,6 +19,7 @@ create table profiles (
   email text not null unique,
   phone text,
   avatar_url text,
+  active boolean not null default true,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -350,19 +351,24 @@ create policy "admins_all_invoices" on invoices for all using (
 
 -- FUNCTIONS
 create or replace function handle_new_user()
-returns trigger as $$
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
 begin
-  insert into profiles (id, email, first_name, last_name, role)
+  insert into public.profiles (id, email, first_name, last_name, role)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'first_name', ''),
     coalesce(new.raw_user_meta_data->>'last_name', ''),
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'parent')
-  );
+    coalesce((new.raw_user_meta_data->>'role')::public.user_role, 'parent')
+  )
+  on conflict (id) do nothing;
   return new;
 end;
-$$ language plpgsql security definer;
+$$;
 
 create trigger on_auth_user_created
   after insert on auth.users
