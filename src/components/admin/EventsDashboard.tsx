@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Plus, Sparkles, Music, Building2, CalendarDays } from 'lucide-react'
+import { Plus, Sparkles, Music, CalendarHeart, CalendarDays } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
 import PartyFormModal from '@/components/forms/PartyFormModal'
 import RowActions from '@/components/admin/RowActions'
 
-type EventType = 'party' | 'recital' | 'rental'
+type EventType = 'party' | 'recital' | 'event'
 
 interface Party {
   id: string
@@ -46,7 +46,7 @@ const SECTIONS: {
 }[] = [
   { type: 'party', title: 'Parties', addLabel: 'Book Party', icon: Sparkles, empty: 'No parties booked yet' },
   { type: 'recital', title: 'Recitals', addLabel: 'Add Recital', icon: Music, empty: 'No recitals scheduled yet' },
-  { type: 'rental', title: 'Rentals', addLabel: 'Add Rental', icon: Building2, empty: 'No rentals booked yet' },
+  { type: 'event', title: 'Events', addLabel: 'Add Event', icon: CalendarHeart, empty: 'No studio events scheduled yet' },
 ]
 
 function todayIso() {

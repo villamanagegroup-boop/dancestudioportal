@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
-type EventType = 'party' | 'recital' | 'rental'
+type EventType = 'party' | 'recital' | 'event'
 
 interface Props {
   onClose: () => void
@@ -14,9 +14,9 @@ interface Props {
 }
 
 const TYPE_COPY: Record<EventType, { title: string; nameLabel: string }> = {
-  party: { title: 'Book Party / Event', nameLabel: 'Contact Name *' },
+  party: { title: 'Book Party', nameLabel: 'Contact Name *' },
   recital: { title: 'Add Recital', nameLabel: 'Recital Name *' },
-  rental: { title: 'Add Rental', nameLabel: 'Renter / Organization *' },
+  event: { title: 'Add Studio Event', nameLabel: 'Event Name *' },
 }
 
 export default function PartyFormModal({ onClose, rooms, defaults, eventType = 'party' }: Props) {

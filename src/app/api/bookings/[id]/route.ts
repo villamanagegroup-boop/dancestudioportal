@@ -4,11 +4,11 @@ import { NextRequest, NextResponse } from 'next/server'
 const BOOKING_FIELDS = [
   'title', 'contact_name', 'contact_email', 'contact_phone',
   'booking_date', 'start_time', 'end_time', 'booking_type',
-  'price', 'status', 'notes', 'room_id',
+  'price', 'status', 'notes', 'room_id', 'partner_id',
 ] as const
 
 const NULLABLE_WHEN_BLANK = new Set([
-  'room_id', 'contact_name', 'contact_email', 'contact_phone', 'notes',
+  'room_id', 'partner_id', 'contact_name', 'contact_email', 'contact_phone', 'notes',
 ])
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

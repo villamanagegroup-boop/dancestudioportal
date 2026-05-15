@@ -7,11 +7,12 @@ import { useRouter } from 'next/navigation'
 interface Props {
   onClose: () => void
   rooms: { id: string; name: string }[]
+  partners?: { id: string; name: string }[]
   defaults?: Partial<Record<string, string>>
   booking?: any
 }
 
-export default function BookingFormModal({ onClose, rooms, defaults, booking }: Props) {
+export default function BookingFormModal({ onClose, rooms, partners = [], defaults, booking }: Props) {
   const router = useRouter()
   const editing = !!booking
   const [submitting, setSubmitting] = useState(false)
@@ -29,13 +30,14 @@ export default function BookingFormModal({ onClose, rooms, defaults, booking }: 
           booking_type: booking.booking_type ?? 'rental',
           price: booking.price != null ? String(booking.price) : '',
           room_id: booking.room_id ?? '',
+          partner_id: booking.partner_id ?? '',
           status: booking.status ?? 'confirmed',
           notes: booking.notes ?? '',
         }
       : {
           title: '', contact_name: '', contact_email: '', contact_phone: '',
           booking_date: '', start_time: '', end_time: '',
-          booking_type: 'rental', price: '', room_id: '', status: 'confirmed', notes: '',
+          booking_type: 'rental', price: '', room_id: '', partner_id: '', status: 'confirmed', notes: '',
           ...defaults,
         },
   )
@@ -55,7 +57,12 @@ export default function BookingFormModal({ onClose, rooms, defaults, booking }: 
     setSubmitting(true)
     setError('')
     try {
-      const payload = { ...form, price: Number(form.price) || 0, room_id: form.room_id || null }
+      const payload = {
+        ...form,
+        price: Number(form.price) || 0,
+        room_id: form.room_id || null,
+        partner_id: form.partner_id || null,
+      }
       const res = await fetch(editing ? `/api/bookings/${booking.id}` : '/api/bookings', {
         method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -106,6 +113,15 @@ export default function BookingFormModal({ onClose, rooms, defaults, booking }: 
                 {rooms.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Partner</label>
+            <select value={form.partner_id} onChange={e => set('partner_id', e.target.value)} className={inputCls}>
+              <option value="">None</option>
+              {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">Link a partner studio, business, or venue to this booking.</p>
           </div>
 
           <div className="grid grid-cols-3 gap-4">

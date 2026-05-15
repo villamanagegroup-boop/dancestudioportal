@@ -125,7 +125,7 @@ export default function PartyOverviewTab({ party, rooms, guardians, students }: 
             <select value={form.event_type} onChange={e => set('event_type', e.target.value)} className={field}>
               <option value="party">Party</option>
               <option value="recital">Recital</option>
-              <option value="rental">Rental</option>
+              <option value="event">Studio Event</option>
             </select>
           </Field>
           <Field label="Package">

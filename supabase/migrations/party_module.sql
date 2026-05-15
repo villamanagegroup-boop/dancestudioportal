@@ -5,15 +5,10 @@
 alter table parties add column if not exists deposit_amount numeric(10,2);
 alter table parties add column if not exists amount_paid numeric(10,2) not null default 0;
 
--- Event type: separates parties / recitals / rentals on the events dashboard
+-- Event type: separates parties / recitals / events on the events dashboard
+-- (rentals live in the bookings table). See activities_partners_module.sql for the
+-- current check constraint values.
 alter table parties add column if not exists event_type text not null default 'party';
-do $$
-begin
-  if not exists (select 1 from pg_constraint where conname = 'parties_event_type_check') then
-    alter table parties add constraint parties_event_type_check
-      check (event_type in ('party', 'recital', 'rental'));
-  end if;
-end $$;
 
 -- Planning checklist
 create table if not exists party_tasks (

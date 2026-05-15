@@ -22,6 +22,8 @@ interface Booking {
   created_at: string
   room_id: string | null
   room: { name: string } | null
+  partner_id: string | null
+  partner: { name: string } | null
 }
 
 type SortKey = 'title' | 'date' | 'type' | 'price' | 'status'
@@ -63,7 +65,11 @@ function StatCard({ label, value }: { label: string; value: string }) {
   )
 }
 
-export default function BookingsTable({ bookings, rooms }: { bookings: Booking[]; rooms: { id: string; name: string }[] }) {
+export default function BookingsTable({ bookings, rooms, partners }: {
+  bookings: Booking[]
+  rooms: { id: string; name: string }[]
+  partners: { id: string; name: string }[]
+}) {
   const [showAdd, setShowAdd] = useState(false)
   const [editing, setEditing] = useState<Booking | null>(null)
   const [sortKey, setSortKey] = useState<SortKey>('date')
@@ -200,6 +206,7 @@ export default function BookingsTable({ bookings, rooms }: { bookings: Booking[]
                     </th>
                   ))}
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Room</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Partner</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Contact</th>
                   <th className="sticky right-0 bg-white border-l border-gray-100 px-5 py-3" />
                 </tr>
@@ -228,6 +235,7 @@ export default function BookingsTable({ bookings, rooms }: { bookings: Booking[]
                       </span>
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-600">{b.room?.name ?? '—'}</td>
+                    <td className="px-5 py-3 text-sm text-gray-600">{b.partner?.name ?? '—'}</td>
                     <td className="px-5 py-3 text-sm text-gray-500">{b.contact_name ?? '—'}</td>
                     <td className="sticky right-0 bg-white group-hover:bg-gray-50 border-l border-gray-100 px-5 py-3 transition-colors">
                       <div className="flex items-center justify-end gap-1">
@@ -255,8 +263,8 @@ export default function BookingsTable({ bookings, rooms }: { bookings: Booking[]
         )}
       </div>
 
-      {showAdd && <BookingFormModal onClose={() => setShowAdd(false)} rooms={rooms} />}
-      {editing && <BookingFormModal onClose={() => setEditing(null)} rooms={rooms} booking={editing} />}
+      {showAdd && <BookingFormModal onClose={() => setShowAdd(false)} rooms={rooms} partners={partners} />}
+      {editing && <BookingFormModal onClose={() => setEditing(null)} rooms={rooms} partners={partners} booking={editing} />}
     </>
   )
 }

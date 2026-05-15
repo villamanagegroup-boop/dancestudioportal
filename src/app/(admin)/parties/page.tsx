@@ -16,7 +16,7 @@ export default async function PartiesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Parties & Events" subtitle="Birthday parties, recitals, and studio rentals" />
+      <Header title="Events" subtitle="Birthday parties, recitals, and studio events" />
       <div className="p-6 overflow-y-auto">
         <EventsDashboard parties={(parties ?? []) as any} rooms={rooms ?? []} />
       </div>

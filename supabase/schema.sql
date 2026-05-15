@@ -236,7 +236,7 @@ create table parties (
   deposit_paid boolean default false,
   status text not null default 'inquiry',
   event_type text not null default 'party'
-    check (event_type in ('party', 'recital', 'rental')),
+    check (event_type in ('party', 'recital', 'event')),
   notes text,
   room_id uuid references rooms(id) on delete set null,
   guardian_id uuid references profiles(id) on delete set null,
