@@ -12,18 +12,11 @@ export default async function StaffPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Staff" subtitle="Instructors and staff management" />
-      <div className="p-6">
+      <div className="p-6 overflow-y-auto">
         {error ? (
           <div className="text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">{error.message}</div>
         ) : (
-          <div>
-            <div className="flex justify-end mb-4">
-              <button className="px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700">
-                Add Instructor
-              </button>
-            </div>
-            <StaffGrid instructors={instructors ?? []} />
-          </div>
+          <StaffGrid instructors={instructors ?? []} />
         )}
       </div>
     </div>

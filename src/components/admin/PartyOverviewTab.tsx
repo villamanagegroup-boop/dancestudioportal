@@ -28,6 +28,7 @@ function initForm(p: any) {
     package: p.package ?? '',
     price: p.price != null ? String(p.price) : '',
     status: p.status ?? 'inquiry',
+    event_type: p.event_type ?? 'party',
     guardian_id: p.guardian_id ?? '',
     student_id: p.student_id ?? '',
     notes: p.notes ?? '',
@@ -120,6 +121,13 @@ export default function PartyOverviewTab({ party, rooms, guardians, students }: 
         </Section>
 
         <Section title="Booking">
+          <Field label="Event Type">
+            <select value={form.event_type} onChange={e => set('event_type', e.target.value)} className={field}>
+              <option value="party">Party</option>
+              <option value="recital">Recital</option>
+              <option value="rental">Rental</option>
+            </select>
+          </Field>
           <Field label="Package">
             <select value={form.package} onChange={e => set('package', e.target.value)} className={field}>
               <option value="">None</option>

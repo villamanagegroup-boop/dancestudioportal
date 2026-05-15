@@ -9,7 +9,7 @@ export default async function BookingsPage() {
     supabase.from('bookings').select(`
       id, title, contact_name, contact_email, contact_phone,
       booking_date, start_time, end_time, booking_type,
-      price, status, notes, created_at,
+      price, status, notes, created_at, room_id,
       room:rooms(name)
     `).order('booking_date', { ascending: false }),
     supabase.from('rooms').select('id, name').eq('active', true),

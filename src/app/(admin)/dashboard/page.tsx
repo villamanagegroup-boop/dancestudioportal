@@ -50,7 +50,7 @@ export default async function DashboardPage() {
     supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('status', 'waitlisted'),
     supabase.from('attendance').select('*', { count: 'exact', head: true }).eq('is_makeup', true).eq('present', false),
     supabase.from('communications')
-      .select('id, subject, body, created_at, sender:profiles(first_name, last_name)')
+      .select('id, subject, body, created_at, sender:profiles!communications_sender_id_fkey(first_name, last_name)')
       .eq('comm_type', 'announcement')
       .order('created_at', { ascending: false })
       .limit(5),

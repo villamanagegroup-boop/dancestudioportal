@@ -2,7 +2,8 @@
 
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { formatCurrency } from '@/lib/utils'
-import { DollarSign, Users, TrendingUp, Award } from 'lucide-react'
+import { DollarSign, Users, TrendingUp, Award, Clock, AlertTriangle } from 'lucide-react'
+import RevenueChart from '@/components/admin/RevenueChart'
 
 interface Props {
   revenueAllTime: number
@@ -12,6 +13,10 @@ interface Props {
   activeStudents: number
   enrollmentsByStatus: { status: string; count: number }[]
   topClasses: { name: string; count: number }[]
+  monthlyRevenue: { month: string; revenue: number }[]
+  revenueByType: { type: string; amount: number }[]
+  outstanding: number
+  overdue: number
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -22,14 +27,18 @@ const STATUS_COLORS: Record<string, string> = {
   completed: '#2dd4bf',
 }
 
+const TYPE_COLORS = ['#7c5cff', '#22d3ee', '#22c5b8', '#f59e0b', '#fb7185', '#9ca3af']
+
 export default function ReportsView({
   revenueAllTime, revenueThisMonth, revenueThisYear,
   totalStudents, activeStudents,
   enrollmentsByStatus, topClasses,
+  monthlyRevenue, revenueByType, outstanding, overdue,
 }: Props) {
   const totalEnrollments = enrollmentsByStatus.reduce((s, e) => s + e.count, 0)
   const pieData = enrollmentsByStatus.filter(e => e.count > 0)
   const maxClassCount = Math.max(...topClasses.map(c => c.count), 1)
+  const typeTotal = revenueByType.reduce((s, t) => s + t.amount, 0)
 
   return (
     <div className="space-y-6">
@@ -51,6 +60,63 @@ export default function ReportsView({
             <p className="text-2xl font-bold text-gray-900">{value}</p>
           </div>
         ))}
+      </div>
+
+      {/* Accounts receivable */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="bg-white rounded-xl border border-yellow-100 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-gray-500">Outstanding Receivables</p>
+            <div className="w-9 h-9 rounded-lg bg-yellow-50 text-yellow-600 flex items-center justify-center">
+              <Clock size={18} />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(outstanding)}</p>
+          <p className="text-xs text-gray-400 mt-1">Total of all pending invoices</p>
+        </div>
+        <div className="bg-white rounded-xl border border-red-100 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium text-gray-500">Overdue</p>
+            <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
+              <AlertTriangle size={18} />
+            </div>
+          </div>
+          <p className="text-2xl font-bold text-gray-900">{formatCurrency(overdue)}</p>
+          <p className="text-xs text-gray-400 mt-1">Pending invoices past their due date</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Revenue trend */}
+        <RevenueChart data={monthlyRevenue} />
+
+        {/* Revenue by type */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+          <h2 className="font-semibold text-gray-900 mb-4">Revenue by Type — This Year</h2>
+          {revenueByType.length === 0 ? (
+            <div className="py-12 text-center text-gray-400 text-sm">No paid invoices this year</div>
+          ) : (
+            <div className="space-y-3">
+              {revenueByType.map(({ type, amount }, i) => (
+                <div key={type}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[i % TYPE_COLORS.length] }} />
+                      <span className="text-xs font-medium text-gray-700 capitalize">{type}</span>
+                    </div>
+                    <span className="text-xs font-semibold text-gray-700">{formatCurrency(amount)}</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{ width: `${typeTotal ? (amount / typeTotal) * 100 : 0}%`, backgroundColor: TYPE_COLORS[i % TYPE_COLORS.length] }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

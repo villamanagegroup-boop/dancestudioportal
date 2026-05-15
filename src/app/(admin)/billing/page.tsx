@@ -7,11 +7,13 @@ export default async function BillingPage() {
   const today = new Date()
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString()
 
-  const [{ data: invoices }] = await Promise.all([
+  const [{ data: invoices }, { data: guardians }, { data: students }] = await Promise.all([
     supabase.from('invoices').select(`
       *, guardian:profiles(first_name, last_name, email),
       student:students(first_name, last_name)
     `).order('created_at', { ascending: false }),
+    supabase.from('profiles').select('id, first_name, last_name').eq('role', 'parent').order('last_name'),
+    supabase.from('students').select('id, first_name, last_name').order('last_name'),
   ])
 
   const allInvoices = invoices ?? []
@@ -28,9 +30,11 @@ export default async function BillingPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Billing" subtitle="Invoices and payment management" />
-      <div className="p-6">
+      <div className="p-6 overflow-y-auto">
         <BillingDashboard
           invoices={allInvoices}
+          guardians={guardians ?? []}
+          students={students ?? []}
           collectedThisMonth={collectedThisMonth}
           outstanding={outstanding}
           overdue={overdue}

@@ -1,16 +1,14 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import Header from '@/components/admin/Header'
-import PartiesShowcase from '@/components/admin/PartiesShowcase'
-import PartiesTable from '@/components/admin/PartiesTable'
+import EventsDashboard from '@/components/admin/EventsDashboard'
 
 export default async function PartiesPage() {
   const supabase = createAdminClient()
 
   const [{ data: parties }, { data: rooms }] = await Promise.all([
     supabase.from('parties').select(`
-      id, contact_name, contact_email, contact_phone,
-      event_date, start_time, end_time, guest_count, package,
-      price, amount_paid, deposit_amount, deposit_paid, status, notes, created_at,
+      id, contact_name, event_type, event_date, start_time, end_time,
+      guest_count, package, price, amount_paid, deposit_paid, status,
       room:rooms(name)
     `).order('event_date', { ascending: false }),
     supabase.from('rooms').select('id, name').eq('active', true),
@@ -19,13 +17,8 @@ export default async function PartiesPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Parties & Events" subtitle="Birthday parties, recitals, and studio rentals" />
-      <div className="p-6 space-y-6 overflow-y-auto">
-        <PartiesShowcase parties={(parties ?? []) as any} rooms={rooms ?? []} />
-
-        <div>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>All bookings</div>
-          <PartiesTable parties={(parties ?? []) as any} rooms={rooms ?? []} />
-        </div>
+      <div className="p-6 overflow-y-auto">
+        <EventsDashboard parties={(parties ?? []) as any} rooms={rooms ?? []} />
       </div>
     </div>
   )

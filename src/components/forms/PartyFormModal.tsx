@@ -4,14 +4,24 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
+type EventType = 'party' | 'recital' | 'rental'
+
 interface Props {
   onClose: () => void
   rooms: { id: string; name: string }[]
   defaults?: Partial<Record<string, string>>
+  eventType?: EventType
 }
 
-export default function PartyFormModal({ onClose, rooms, defaults }: Props) {
+const TYPE_COPY: Record<EventType, { title: string; nameLabel: string }> = {
+  party: { title: 'Book Party / Event', nameLabel: 'Contact Name *' },
+  recital: { title: 'Add Recital', nameLabel: 'Recital Name *' },
+  rental: { title: 'Add Rental', nameLabel: 'Renter / Organization *' },
+}
+
+export default function PartyFormModal({ onClose, rooms, defaults, eventType = 'party' }: Props) {
   const router = useRouter()
+  const copy = TYPE_COPY[eventType]
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [form, setForm] = useState({
@@ -38,6 +48,7 @@ export default function PartyFormModal({ onClose, rooms, defaults }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          event_type: eventType,
           guest_count: form.guest_count ? Number(form.guest_count) : null,
           price: Number(form.price) || 0,
           room_id: form.room_id || null,
@@ -60,7 +71,7 @@ export default function PartyFormModal({ onClose, rooms, defaults }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Book Party / Event</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{copy.title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
         <form onSubmit={onSubmit} className="p-6 space-y-4 overflow-y-auto">
@@ -68,7 +79,7 @@ export default function PartyFormModal({ onClose, rooms, defaults }: Props) {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{copy.nameLabel}</label>
               <input value={form.contact_name} onChange={e => set('contact_name', e.target.value)} className={inputCls} />
             </div>
             <div>

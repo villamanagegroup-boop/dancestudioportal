@@ -8,18 +8,37 @@ interface Props {
   onClose: () => void
   rooms: { id: string; name: string }[]
   defaults?: Partial<Record<string, string>>
+  booking?: any
 }
 
-export default function BookingFormModal({ onClose, rooms, defaults }: Props) {
+export default function BookingFormModal({ onClose, rooms, defaults, booking }: Props) {
   const router = useRouter()
+  const editing = !!booking
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
-  const [form, setForm] = useState({
-    title: '', contact_name: '', contact_email: '', contact_phone: '',
-    booking_date: '', start_time: '', end_time: '',
-    booking_type: 'rental', price: '', room_id: '', status: 'confirmed', notes: '',
-    ...defaults,
-  })
+  const [form, setForm] = useState(() =>
+    editing
+      ? {
+          title: booking.title ?? '',
+          contact_name: booking.contact_name ?? '',
+          contact_email: booking.contact_email ?? '',
+          contact_phone: booking.contact_phone ?? '',
+          booking_date: booking.booking_date ?? '',
+          start_time: booking.start_time?.slice(0, 5) ?? '',
+          end_time: booking.end_time?.slice(0, 5) ?? '',
+          booking_type: booking.booking_type ?? 'rental',
+          price: booking.price != null ? String(booking.price) : '',
+          room_id: booking.room_id ?? '',
+          status: booking.status ?? 'confirmed',
+          notes: booking.notes ?? '',
+        }
+      : {
+          title: '', contact_name: '', contact_email: '', contact_phone: '',
+          booking_date: '', start_time: '', end_time: '',
+          booking_type: 'rental', price: '', room_id: '', status: 'confirmed', notes: '',
+          ...defaults,
+        },
+  )
 
   function set(field: string, value: string) { setForm(f => ({ ...f, [field]: value })) }
 
@@ -29,16 +48,21 @@ export default function BookingFormModal({ onClose, rooms, defaults }: Props) {
       setError('Title, date, and times are required.')
       return
     }
+    if (form.end_time <= form.start_time) {
+      setError('End time must be after start time.')
+      return
+    }
     setSubmitting(true)
     setError('')
     try {
-      const res = await fetch('/api/bookings', {
-        method: 'POST',
+      const payload = { ...form, price: Number(form.price) || 0, room_id: form.room_id || null }
+      const res = await fetch(editing ? `/api/bookings/${booking.id}` : '/api/bookings', {
+        method: editing ? 'PATCH' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, price: Number(form.price) || 0, room_id: form.room_id || null }),
+        body: JSON.stringify(payload),
       })
-      const json = await res.json()
-      if (!res.ok) throw new Error(json.error ?? 'Failed to create booking')
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error ?? 'Failed to save booking')
       router.refresh()
       onClose()
     } catch (err: any) {
@@ -54,7 +78,7 @@ export default function BookingFormModal({ onClose, rooms, defaults }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">Add Booking</h2>
+          <h2 className="text-lg font-semibold text-gray-900">{editing ? 'Edit Booking' : 'Add Booking'}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
         <form onSubmit={onSubmit} className="p-6 space-y-4 overflow-y-auto">
@@ -109,6 +133,8 @@ export default function BookingFormModal({ onClose, rooms, defaults }: Props) {
               <select value={form.status} onChange={e => set('status', e.target.value)} className={inputCls}>
                 <option value="inquiry">Inquiry</option>
                 <option value="confirmed">Confirmed</option>
+                <option value="completed">Completed</option>
+                <option value="cancelled">Cancelled</option>
               </select>
             </div>
           </div>
@@ -137,7 +163,7 @@ export default function BookingFormModal({ onClose, rooms, defaults }: Props) {
           <div className="flex justify-end gap-3 pt-2">
             <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
             <button type="submit" disabled={submitting} className="px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 disabled:opacity-50">
-              {submitting ? 'Saving...' : 'Create Booking'}
+              {submitting ? 'Saving...' : editing ? 'Save Changes' : 'Create Booking'}
             </button>
           </div>
         </form>
