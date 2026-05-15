@@ -28,16 +28,20 @@ export default async function SettingsPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Settings" subtitle="Studio configuration, portals, and finance" />
-      <div className="p-6 overflow-y-auto">
-        <SettingsPanel
-          seasons={seasons ?? []}
-          rooms={rooms ?? []}
-          classTypes={classTypes ?? []}
-          studioHours={studioHours ?? []}
-          settings={settings}
-          taxRates={taxRates ?? []}
-          chargeCategories={chargeCategories ?? []}
-        />
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            <SettingsPanel
+              seasons={seasons ?? []}
+              rooms={rooms ?? []}
+              classTypes={classTypes ?? []}
+              studioHours={studioHours ?? []}
+              settings={settings}
+              taxRates={taxRates ?? []}
+              chargeCategories={chargeCategories ?? []}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -20,8 +20,12 @@ export default async function BookingsPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Bookings" subtitle="Studio rentals, private lessons, and rehearsals" />
-      <div className="p-6">
-        <BookingsTable bookings={(bookings ?? []) as any} rooms={rooms ?? []} partners={partners ?? []} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            <BookingsTable bookings={(bookings ?? []) as any} rooms={rooms ?? []} partners={partners ?? []} />
+          </div>
+        </div>
       </div>
     </div>
   )

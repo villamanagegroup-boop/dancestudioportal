@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { STAFF_ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, type StaffRole } from '@/lib/permissions'
 
 interface Props {
   onClose: () => void
@@ -23,6 +24,7 @@ export default function StaffFormModal({ onClose, instructor }: Props) {
     specialties: (instructor?.specialties ?? []).join(', '),
     pay_rate: instructor?.pay_rate != null ? String(instructor.pay_rate) : '',
     pay_type: instructor?.pay_type ?? 'hourly',
+    staff_role: (instructor?.staff_role ?? 'instructor') as StaffRole,
     background_check_date: instructor?.background_check_date ?? '',
     background_check_expires: instructor?.background_check_expires ?? '',
     active: instructor?.active ?? true,
@@ -48,6 +50,7 @@ export default function StaffFormModal({ onClose, instructor }: Props) {
         specialties: form.specialties.split(',').map((s: string) => s.trim()).filter(Boolean),
         pay_rate: form.pay_rate === '' ? null : Number(form.pay_rate),
         pay_type: form.pay_type,
+        staff_role: form.staff_role,
         background_check_date: form.background_check_date || null,
         background_check_expires: form.background_check_expires || null,
         active: form.active,
@@ -100,6 +103,14 @@ export default function StaffFormModal({ onClose, instructor }: Props) {
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
               <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)} className={inputCls} />
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <select value={form.staff_role} onChange={e => set('staff_role', e.target.value)} className={inputCls}>
+              {STAFF_ROLES.map(r => <option key={r} value={r}>{ROLE_LABELS[r]}</option>)}
+            </select>
+            <p className="text-xs text-gray-400 mt-1">{ROLE_DESCRIPTIONS[form.staff_role]}</p>
           </div>
 
           <div>

@@ -74,8 +74,10 @@ export default async function ParentLayout({ children }: { children: React.React
           </nav>
         </div>
       </header>
-      <main className="max-w-5xl mx-auto px-4 py-6">
-        {children}
+      <main className="max-w-5xl mx-auto px-4 py-6 sm:py-8 lg:py-12">
+        <div className="glass glass-page">
+          {children}
+        </div>
       </main>
     </div>
   )

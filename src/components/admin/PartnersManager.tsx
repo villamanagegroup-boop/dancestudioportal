@@ -5,6 +5,7 @@ import { Plus, Search, Pencil, Handshake, Globe, Mail, Phone } from 'lucide-reac
 import { cn, formatCurrency } from '@/lib/utils'
 import RowActions from '@/components/admin/RowActions'
 import PartnerFormModal from '@/components/forms/PartnerFormModal'
+import KpiStrip from '@/components/admin/KpiStrip'
 
 interface Partner {
   id: string
@@ -30,15 +31,6 @@ const TYPE_META: Record<string, { label: string; cls: string }> = {
 
 const RATE_UNIT_LABEL: Record<string, string> = {
   flat: 'flat', hour: '/hr', day: '/day', event: '/event', month: '/mo',
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
-    </div>
-  )
 }
 
 export default function PartnersManager({ partners }: { partners: Partner[] }) {
@@ -69,11 +61,13 @@ export default function PartnersManager({ partners }: { partners: Partner[] }) {
 
   return (
     <>
-      <div className="grid grid-cols-3 gap-4 mb-5">
-        <StatCard label="Total Partners" value={String(stats.total)} />
-        <StatCard label="Active" value={String(stats.active)} />
-        <StatCard label="Partner Studios" value={String(stats.studios)} />
-      </div>
+      <KpiStrip items={[
+        { label: 'Total partners', value: String(stats.total) },
+        { label: 'Active', value: String(stats.active) },
+        { label: 'Partner studios', value: String(stats.studios) },
+      ]} />
+
+      <hr className="section-rule" />
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative flex-1 min-w-[200px]">

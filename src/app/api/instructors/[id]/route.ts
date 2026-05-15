@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 const INSTRUCTOR_FIELDS = [
   'first_name', 'last_name', 'email', 'phone', 'bio', 'specialties',
   'pay_rate', 'pay_type', 'background_check_date', 'background_check_expires', 'active',
+  'staff_role', 'permission_overrides',
 ] as const
 
 const NULLABLE_WHEN_BLANK = new Set([

@@ -44,12 +44,22 @@ export default async function ActivitiesPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Activities" subtitle="Classes, camps, and enrollments at a glance" />
-      <div className="p-6 overflow-y-auto">
-        <ActivitiesDashboard
-          stats={stats}
-          recentEnrollments={(recentEnrollments ?? []) as any}
-          upcomingCamps={(upcomingCamps ?? []) as any}
-        />
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            <div className="mb-7">
+              <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>Activity</p>
+              <p className="mt-1.5" style={{ fontSize: 15, fontWeight: 500, color: 'var(--ink-2)', letterSpacing: '-0.005em' }}>
+                Classes, camps, and enrollment activity at a glance.
+              </p>
+            </div>
+            <ActivitiesDashboard
+              stats={stats}
+              recentEnrollments={(recentEnrollments ?? []) as any}
+              upcomingCamps={(upcomingCamps ?? []) as any}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

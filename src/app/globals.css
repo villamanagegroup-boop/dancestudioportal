@@ -128,10 +128,12 @@ body > * { position: relative; z-index: 1; }
 
 /* Header strip: paints across the entire top, behind the sidebar.
    Sidebar (z-30) overlaps it on the left; Header content (in-flow inside main)
-   renders on top in its native column. */
+   renders on top in its native column.
+   --preview-h is set when the layout shows a top "view as" banner (instructor / parent
+   preview mode); both this strip and the sidebar respect it so nothing covers the banner. */
 .admin-shell .admin-header-bar {
   position: fixed;
-  top: 0; left: 0; right: 0;
+  top: var(--preview-h, 0px); left: 0; right: 0;
   height: 64px;
   z-index: 5;
   background: var(--glass-thin);
@@ -198,6 +200,222 @@ body > * { position: relative; z-index: 1; }
     padding-right: 12px;
     justify-content: flex-start;
   }
+}
+
+/* Whole-page glass shell — used as the single translucent card that wraps a dashboard */
+.glass-page {
+  padding: 32px 36px;
+  border-radius: var(--radius);
+}
+@media (max-width: 760px) {
+  .glass-page { padding: 22px 20px; }
+}
+
+/* Page-gutter: how much gradient shows around the glass-page card.
+   Scales up on bigger screens so the card feels generous without losing
+   the colored frame around it. */
+.page-gutter { padding: 20px; }
+@media (min-width: 640px)  { .page-gutter { padding: 32px; } }
+@media (min-width: 1024px) { .page-gutter { padding: 56px; } }
+@media (min-width: 1280px) { .page-gutter { padding: 80px; } }
+@media (min-width: 1536px) { .page-gutter { padding: 96px; } }
+
+/* ───────── Sleek section primitives ─────────
+   Less cardy: type-only section heads, hairline dividers, tight lists.
+   Compose with the existing color tokens — no new colors introduced. */
+
+.section-rule {
+  height: 1px;
+  background: var(--line);
+  margin: 24px 0;
+  border: 0;
+}
+
+.eyebrow-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.eyebrow-row .eyebrow { color: var(--ink-3); }
+.eyebrow-row .eyebrow-action {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+  text-decoration: none;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.eyebrow-row .eyebrow-action:hover { color: var(--ink-1); }
+
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(var(--kpi-cols, 4), minmax(0, 1fr));
+  gap: 0;
+}
+.kpi-strip > div {
+  padding: 4px 20px;
+  border-left: 1px solid var(--line);
+  min-width: 0;
+}
+.kpi-strip .kpi-sub {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 5px;
+  font-weight: 500;
+}
+.kpi-strip > div:first-child { padding-left: 0; border-left: 0; }
+.kpi-strip .l {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.kpi-strip .v {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  margin-top: 8px;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+}
+.kpi-strip .delta {
+  display: inline-flex;
+  gap: 4px;
+  align-items: baseline;
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+@media (max-width: 760px) {
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); row-gap: 18px; }
+  .kpi-strip > div:nth-child(odd) { border-left: 0; padding-left: 0; }
+}
+
+.tight-list { display: flex; flex-direction: column; }
+.tight-list .tl-row {
+  display: grid;
+  grid-template-columns: 86px 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+  color: inherit;
+  text-decoration: none;
+  transition: padding-left .15s ease;
+}
+.tight-list .tl-row:hover { padding-left: 4px; }
+.tight-list .tl-row:last-child { border-bottom: 0; }
+.tight-list .tl-row.no-lead { grid-template-columns: 1fr auto; }
+.tight-list .tl-lead { min-width: 0; }
+.tight-list .tl-lead .t {
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: -0.005em;
+  color: var(--ink-1);
+  font-variant-numeric: tabular-nums;
+}
+.tight-list .tl-lead .s {
+  font-size: 11px;
+  color: var(--ink-3);
+  font-weight: 500;
+  margin-top: 1px;
+}
+.tight-list .tl-main { min-width: 0; }
+.tight-list .tl-main .t {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--ink-1);
+  letter-spacing: -0.005em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tight-list .tl-main .s {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tight-list .tl-trail {
+  text-align: right;
+  font-size: 12px;
+  color: var(--ink-3);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.spark-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  height: 132px;
+  padding-bottom: 22px;
+  position: relative;
+}
+.spark-bars .col {
+  flex: 1;
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.spark-bars .bar {
+  width: 100%;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--grad-1) 75%, transparent),
+    color-mix(in srgb, var(--grad-3) 55%, transparent)
+  );
+  min-height: 4px;
+  transition: opacity .15s ease;
+}
+.spark-bars .col:hover .bar { opacity: .8; }
+.spark-bars .label {
+  position: absolute;
+  bottom: -22px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.spark-bars .col.current .label { color: var(--ink-1); }
+
+.attention-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 13px 7px 11px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--grad-3) 12%, transparent);
+  color: var(--ink-1);
+  border: 1px solid color-mix(in srgb, var(--grad-3) 25%, transparent);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.attention-pill:hover {
+  background: color-mix(in srgb, var(--grad-3) 18%, transparent);
+}
+.attention-pill .dot-sm {
+  background: linear-gradient(135deg, var(--grad-3), var(--grad-1));
 }
 
 /* ───────── Glass primitives ───────── */

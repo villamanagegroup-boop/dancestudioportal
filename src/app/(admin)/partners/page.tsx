@@ -12,8 +12,12 @@ export default async function PartnersPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Partners" subtitle="Studio partnerships, local businesses, vendors, and venues" />
-      <div className="p-6 overflow-y-auto">
-        <PartnersManager partners={(partners ?? []) as any} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            <PartnersManager partners={(partners ?? []) as any} />
+          </div>
+        </div>
       </div>
     </div>
   )

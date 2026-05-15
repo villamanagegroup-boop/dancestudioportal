@@ -1,5 +1,7 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
-import { formatCurrency, formatDate, cn, getPaymentStatusColor } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import KpiStrip from '@/components/admin/KpiStrip'
+import SectionHead from '@/components/admin/SectionHead'
 
 const NO_ID = '00000000-0000-0000-0000-000000000000'
 
@@ -8,78 +10,89 @@ export default async function ParentBillingPage() {
   const gid = effectiveId ?? NO_ID
 
   const { data: invoices } = await db
-    .from('invoices').select('*')
+    .from('invoices')
+    .select('*')
     .eq('guardian_id', gid)
     .order('created_at', { ascending: false })
 
-  const outstanding = (invoices ?? []).filter(i => i.status === 'pending' || i.status === 'failed')
-  const paid = (invoices ?? []).filter(i => i.status === 'paid')
+  const list = invoices ?? []
+  const outstanding = list.filter(i => i.status === 'pending' || i.status === 'failed')
+  const paid = list.filter(i => i.status === 'paid')
+  const outstandingTotal = outstanding.reduce((s, i) => s + Number(i.amount), 0)
+  const paidTotal = paid.reduce((s, i) => s + Number(i.amount), 0)
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-gray-900">Billing</h1>
+    <div>
+      <div className="mb-7">
+        <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>Billing</p>
+        <h1 className="h1 mt-2" style={{ fontSize: 26, letterSpacing: '-0.02em' }}>
+          Your account.
+        </h1>
+        <p className="mt-1.5" style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-2)' }}>
+          {outstanding.length > 0
+            ? `You have ${formatCurrency(outstandingTotal)} outstanding across ${outstanding.length} invoice${outstanding.length === 1 ? '' : 's'}.`
+            : 'You’re all caught up.'}
+        </p>
+      </div>
 
-      {/* Outstanding */}
+      <KpiStrip
+        items={[
+          { label: 'Outstanding', value: formatCurrency(outstandingTotal) },
+          { label: 'Open invoices', value: String(outstanding.length) },
+          { label: 'Lifetime paid', value: formatCurrency(paidTotal) },
+        ]}
+      />
+
       {outstanding.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Outstanding</h2>
-          <div className="space-y-3">
-            {outstanding.map(inv => (
-              <div key={inv.id} className="bg-white rounded-xl border border-orange-200 shadow-sm p-4 flex items-center justify-between gap-4">
-                <div>
-                  <p className="font-semibold text-gray-900">{inv.description}</p>
-                  <p className="text-sm text-gray-500">
-                    {inv.due_date ? `Due ${formatDate(inv.due_date)}` : 'No due date'} ·{' '}
-                    <span className={cn('text-xs font-medium', getPaymentStatusColor(inv.status).split(' ')[1])}>
-                      {inv.status}
-                    </span>
-                  </p>
+        <>
+          <hr className="section-rule" />
+          <section>
+            <SectionHead label="Outstanding" />
+            <div className="tight-list">
+              {outstanding.map(inv => (
+                <div key={inv.id} className="tl-row no-lead">
+                  <div className="tl-main">
+                    <div className="t">{inv.description}</div>
+                    <div className="s">
+                      {inv.due_date ? `Due ${formatDate(inv.due_date)}` : 'No due date'} ·{' '}
+                      <span style={{ color: inv.status === 'failed' ? '#dc2626' : '#b45309', fontWeight: 600 }}>
+                        {inv.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="tl-trail">
+                    <span style={{ fontWeight: 700, color: 'var(--ink-1)' }}>{formatCurrency(Number(inv.amount))}</span>
+                    <button className="text-sm font-medium" style={{ color: 'var(--grad-1)' }}>
+                      Pay →
+                    </button>
+                  </div>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="font-bold text-gray-900 text-lg">{formatCurrency(Number(inv.amount))}</p>
-                  <button className="text-sm font-medium text-studio-600 hover:text-studio-700 mt-1">
-                    Pay Now →
-                  </button>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      <hr className="section-rule" />
+
+      <section>
+        <SectionHead label="Payment history" />
+        {paid.length === 0 ? (
+          <p className="muted" style={{ fontSize: 13 }}>No payment history yet.</p>
+        ) : (
+          <div className="tight-list">
+            {paid.map(inv => (
+              <div key={inv.id} className="tl-row no-lead">
+                <div className="tl-main">
+                  <div className="t">{inv.description}</div>
+                  <div className="s">{inv.paid_at ? `Paid ${formatDate(inv.paid_at)}` : '—'}</div>
+                </div>
+                <div className="tl-trail">
+                  <span className="tag tag-mint">{inv.status}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--ink-1)' }}>{formatCurrency(Number(inv.amount))}</span>
                 </div>
               </div>
             ))}
-          </div>
-        </section>
-      )}
-
-      {/* Payment history */}
-      <section>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Payment History</h2>
-        {paid.length === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400 text-sm shadow-sm">
-            No payment history yet
-          </div>
-        ) : (
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-100">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Description</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Amount</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Paid On</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {paid.map(inv => (
-                  <tr key={inv.id}>
-                    <td className="px-5 py-3 text-sm text-gray-900">{inv.description}</td>
-                    <td className="px-5 py-3 text-sm font-semibold text-gray-900">{formatCurrency(Number(inv.amount))}</td>
-                    <td className="px-5 py-3 text-sm text-gray-500">{inv.paid_at ? formatDate(inv.paid_at) : '—'}</td>
-                    <td className="px-5 py-3">
-                      <span className={cn('text-xs font-medium px-2 py-1 rounded-full', getPaymentStatusColor(inv.status))}>
-                        {inv.status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
           </div>
         )}
       </section>

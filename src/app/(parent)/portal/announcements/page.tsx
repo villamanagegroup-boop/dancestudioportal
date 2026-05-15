@@ -1,6 +1,5 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { formatDate } from '@/lib/utils'
-import { Megaphone } from 'lucide-react'
 
 const NO_ID = '00000000-0000-0000-0000-000000000000'
 
@@ -8,7 +7,6 @@ export default async function ParentAnnouncementsPage() {
   const { db, effectiveId } = await getPortalViewer('g')
   const gid = effectiveId ?? NO_ID
 
-  // Which classes the family is in → which class announcements they see
   const { data: gs } = await db
     .from('guardian_students').select('student_id').eq('guardian_id', gid)
   const studentIds = (gs ?? []).map(r => r.student_id)
@@ -29,31 +27,39 @@ export default async function ParentAnnouncementsPage() {
     : query.eq('target_all', true)
 
   const { data: announcements } = await query
+  const list = announcements ?? []
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">News &amp; Announcements</h1>
+    <div>
+      <div className="mb-7">
+        <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>News</p>
+        <h1 className="h1 mt-2" style={{ fontSize: 26, letterSpacing: '-0.02em' }}>
+          Announcements & updates.
+        </h1>
+        <p className="mt-1.5" style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-2)' }}>
+          {list.length === 0 ? 'Nothing posted yet.' : `${list.length} update${list.length === 1 ? '' : 's'} from your studio.`}
+        </p>
+      </div>
 
-      {!announcements?.length ? (
-        <div className="bg-white rounded-xl border border-gray-100 p-12 text-center shadow-sm">
-          <Megaphone size={28} className="text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-400 text-sm">No announcements yet</p>
-        </div>
+      {list.length === 0 ? (
+        <p className="muted" style={{ fontSize: 13 }}>No announcements yet.</p>
       ) : (
-        <div className="space-y-3">
-          {announcements.map((a: any) => (
-            <div key={a.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-studio-50 text-studio-700">
+        <div className="space-y-6">
+          {list.map((a: any) => (
+            <article key={a.id} style={{ borderBottom: '1px solid var(--line)', paddingBottom: 22 }}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="tag tag-iris">
                   {a.target_all ? 'Studio-wide' : a.class?.name ?? 'Class'}
                 </span>
-                <span className="text-xs text-gray-400 ml-auto">
+                <span className="text-xs ml-auto" style={{ color: 'var(--ink-3)' }}>
                   {formatDate(a.sent_at ?? a.created_at)}
                 </span>
               </div>
-              <h2 className="font-semibold text-gray-900">{a.subject ?? '(no subject)'}</h2>
-              <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{a.body}</p>
-            </div>
+              <h2 className="h3" style={{ fontSize: 16 }}>{a.subject ?? '(no subject)'}</h2>
+              <p className="text-sm mt-2 whitespace-pre-wrap" style={{ color: 'var(--ink-2)', lineHeight: 1.55 }}>
+                {a.body}
+              </p>
+            </article>
           ))}
         </div>
       )}

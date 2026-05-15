@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import Header from '@/components/admin/Header'
 import StaffEditButton from '@/components/admin/StaffEditButton'
+import StaffPermissionsPanel from '@/components/admin/StaffPermissionsPanel'
 import { formatDate, formatTime } from '@/lib/utils'
 
 function bgCheckBadge(expires: string | null) {
@@ -31,7 +32,9 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="flex flex-col h-full">
       <Header title={`${instructor.first_name} ${instructor.last_name}`} subtitle="Instructor profile" />
-      <div className="p-6 space-y-6 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full space-y-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Profile */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5 col-span-1">
@@ -111,6 +114,10 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
                 </tbody>
               </table>
             )}
+          </div>
+        </div>
+
+            <StaffPermissionsPanel instructor={instructor} />
           </div>
         </div>
       </div>

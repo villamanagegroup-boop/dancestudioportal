@@ -12,12 +12,16 @@ export default async function StaffPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Staff" subtitle="Instructors and staff management" />
-      <div className="p-6 overflow-y-auto">
-        {error ? (
-          <div className="text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">{error.message}</div>
-        ) : (
-          <StaffGrid instructors={instructors ?? []} />
-        )}
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            {error ? (
+              <div className="text-red-600 bg-red-50 border border-red-200 rounded-xl p-4">{error.message}</div>
+            ) : (
+              <StaffGrid instructors={instructors ?? []} />
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

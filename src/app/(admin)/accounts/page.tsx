@@ -92,7 +92,15 @@ export default async function AccountsPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Accounts" subtitle="Families and students overview" />
-      <div className="p-6 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            <div className="mb-7">
+              <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>People</p>
+              <p className="mt-1.5" style={{ fontSize: 15, fontWeight: 500, color: 'var(--ink-2)', letterSpacing: '-0.005em' }}>
+                Where your families and students stand right now.
+              </p>
+            </div>
         <AccountsDashboard
           stats={stats}
           recentFamilies={recentFamilies}
@@ -100,6 +108,8 @@ export default async function AccountsPage() {
           birthdays={birthdays}
           outstandingFamilies={outstandingFamilies}
         />
+          </div>
+        </div>
       </div>
     </div>
   )

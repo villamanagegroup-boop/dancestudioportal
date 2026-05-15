@@ -1,9 +1,6 @@
-'use client'
-
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import KpiStrip from '@/components/admin/KpiStrip'
+import SectionHead from '@/components/admin/SectionHead'
 import { formatCurrency } from '@/lib/utils'
-import { DollarSign, Users, TrendingUp, Award, Clock, AlertTriangle } from 'lucide-react'
-import RevenueChart from '@/components/admin/RevenueChart'
 
 interface Props {
   revenueAllTime: number
@@ -29,6 +26,28 @@ const STATUS_COLORS: Record<string, string> = {
 
 const TYPE_COLORS = ['#7c5cff', '#22d3ee', '#22c5b8', '#f59e0b', '#fb7185', '#9ca3af']
 
+function HBar({ label, value, total, color, format = 'number' }: {
+  label: string; value: number; total: number; color: string; format?: 'number' | 'currency'
+}) {
+  const pct = total > 0 ? (value / total) * 100 : 0
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+          <span className="text-xs font-medium capitalize" style={{ color: 'var(--ink-2)' }}>{label}</span>
+        </div>
+        <span className="text-xs font-semibold tabular-nums" style={{ color: 'var(--ink-1)' }}>
+          {format === 'currency' ? formatCurrency(value) : value.toLocaleString()}
+        </span>
+      </div>
+      <div style={{ height: 6, borderRadius: 999, background: 'var(--line)', overflow: 'hidden' }}>
+        <div style={{ width: `${Math.max(2, pct)}%`, height: '100%', background: color, borderRadius: 999 }} />
+      </div>
+    </div>
+  )
+}
+
 export default function ReportsView({
   revenueAllTime, revenueThisMonth, revenueThisYear,
   totalStudents, activeStudents,
@@ -36,162 +55,125 @@ export default function ReportsView({
   monthlyRevenue, revenueByType, outstanding, overdue,
 }: Props) {
   const totalEnrollments = enrollmentsByStatus.reduce((s, e) => s + e.count, 0)
-  const pieData = enrollmentsByStatus.filter(e => e.count > 0)
   const maxClassCount = Math.max(...topClasses.map(c => c.count), 1)
   const typeTotal = revenueByType.reduce((s, t) => s + t.amount, 0)
+  const maxMonthly = Math.max(...monthlyRevenue.map(m => m.revenue), 1)
+  const sixMonthTotal = monthlyRevenue.reduce((s, m) => s + m.revenue, 0)
 
   return (
-    <div className="space-y-6">
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {[
-          { label: 'Revenue This Month', value: formatCurrency(revenueThisMonth), icon: DollarSign, color: 'bg-green-50 text-green-600', border: 'border-green-100' },
-          { label: 'Revenue This Year', value: formatCurrency(revenueThisYear), icon: TrendingUp, color: 'bg-blue-50 text-blue-600', border: 'border-blue-100' },
-          { label: 'All-Time Revenue', value: formatCurrency(revenueAllTime), icon: Award, color: 'bg-purple-50 text-purple-600', border: 'border-purple-100' },
-          { label: 'Active / Total Students', value: `${activeStudents} / ${totalStudents}`, icon: Users, color: 'bg-orange-50 text-orange-600', border: 'border-orange-100' },
-        ].map(({ label, value, icon: Icon, color, border }) => (
-          <div key={label} className={`bg-white rounded-xl border ${border} p-5 shadow-sm`}>
-            <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-medium text-gray-500">{label}</p>
-              <div className={`w-9 h-9 rounded-lg ${color} flex items-center justify-center`}>
-                <Icon size={18} />
-              </div>
-            </div>
-            <p className="text-2xl font-bold text-gray-900">{value}</p>
-          </div>
-        ))}
+    <div>
+      <KpiStrip items={[
+        { label: 'Revenue this month', value: formatCurrency(revenueThisMonth) },
+        { label: 'Revenue this year', value: formatCurrency(revenueThisYear) },
+        { label: 'All-time revenue', value: formatCurrency(revenueAllTime) },
+        { label: 'Students', value: `${activeStudents} / ${totalStudents}`, sub: 'active / total' },
+      ]} />
+
+      <div className="mt-6">
+        <KpiStrip items={[
+          { label: 'Outstanding receivables', value: formatCurrency(outstanding), sub: 'all pending invoices' },
+          { label: 'Overdue', value: formatCurrency(overdue), sub: 'past their due date' },
+        ]} />
       </div>
 
-      {/* Accounts receivable */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="bg-white rounded-xl border border-yellow-100 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-gray-500">Outstanding Receivables</p>
-            <div className="w-9 h-9 rounded-lg bg-yellow-50 text-yellow-600 flex items-center justify-center">
-              <Clock size={18} />
+      <hr className="section-rule" />
+
+      <section>
+        <SectionHead label="Revenue · last 6 months" />
+        <div className="flex items-end justify-between gap-8 flex-wrap mb-4">
+          <div>
+            <div className="text-2xl font-bold tabular-nums" style={{ color: 'var(--ink-1)', letterSpacing: '-0.02em' }}>
+              {formatCurrency(sixMonthTotal)}
+            </div>
+            <div className="text-xs mt-1" style={{ color: 'var(--ink-3)' }}>
+              Collected · {formatCurrency(revenueThisMonth)} this month
             </div>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(outstanding)}</p>
-          <p className="text-xs text-gray-400 mt-1">Total of all pending invoices</p>
-        </div>
-        <div className="bg-white rounded-xl border border-red-100 p-5 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-medium text-gray-500">Overdue</p>
-            <div className="w-9 h-9 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
-              <AlertTriangle size={18} />
-            </div>
+          <div className="text-xs" style={{ color: 'var(--ink-3)' }}>
+            {monthlyRevenue[0]?.month} – {monthlyRevenue[monthlyRevenue.length - 1]?.month}
           </div>
-          <p className="text-2xl font-bold text-gray-900">{formatCurrency(overdue)}</p>
-          <p className="text-xs text-gray-400 mt-1">Pending invoices past their due date</p>
         </div>
-      </div>
+        {sixMonthTotal === 0 ? (
+          <p className="muted" style={{ fontSize: 13 }}>No revenue recorded in the last 6 months.</p>
+        ) : (
+          <div className="spark-bars">
+            {monthlyRevenue.map((b, i) => {
+              const h = Math.max(4, (b.revenue / maxMonthly) * 100)
+              const isCurrent = i === monthlyRevenue.length - 1
+              return (
+                <div key={i} className={`col ${isCurrent ? 'current' : ''}`}>
+                  <div className="bar" style={{ height: `${h}%` }} title={`${b.month}: ${formatCurrency(b.revenue)}`} />
+                  <div className="label">{b.month}</div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Revenue trend */}
-        <RevenueChart data={monthlyRevenue} />
+      <hr className="section-rule" />
 
-        {/* Revenue by type */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Revenue by Type — This Year</h2>
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+        <div>
+          <SectionHead label="Revenue by type · this year" />
           {revenueByType.length === 0 ? (
-            <div className="py-12 text-center text-gray-400 text-sm">No paid invoices this year</div>
+            <p className="muted" style={{ fontSize: 13 }}>No paid invoices this year.</p>
           ) : (
             <div className="space-y-3">
-              {revenueByType.map(({ type, amount }, i) => (
-                <div key={type}>
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: TYPE_COLORS[i % TYPE_COLORS.length] }} />
-                      <span className="text-xs font-medium text-gray-700 capitalize">{type}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-gray-700">{formatCurrency(amount)}</span>
-                  </div>
-                  <div className="h-2 rounded-full bg-gray-100 overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${typeTotal ? (amount / typeTotal) * 100 : 0}%`, backgroundColor: TYPE_COLORS[i % TYPE_COLORS.length] }}
-                    />
-                  </div>
-                </div>
+              {revenueByType.map((t, i) => (
+                <HBar
+                  key={t.type}
+                  label={t.type}
+                  value={t.amount}
+                  total={typeTotal}
+                  color={TYPE_COLORS[i % TYPE_COLORS.length]}
+                  format="currency"
+                />
               ))}
             </div>
           )}
         </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Enrollment breakdown donut */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Enrollment Breakdown</h2>
+        <div>
+          <SectionHead label="Enrollment breakdown" right={<span className="text-xs tabular-nums" style={{ color: 'var(--ink-3)' }}>{totalEnrollments} total</span>} />
           {totalEnrollments === 0 ? (
-            <div className="py-12 text-center text-gray-400 text-sm">No enrollment data yet</div>
-          ) : (
-            <div className="flex items-center gap-6">
-              <div className="relative flex-shrink-0" style={{ width: 160, height: 160 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      dataKey="count"
-                      nameKey="status"
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={54}
-                      outerRadius={70}
-                      strokeWidth={2}
-                      stroke="#fff"
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      {pieData.map((entry) => (
-                        <Cell key={entry.status} fill={STATUS_COLORS[entry.status] ?? '#9ca3af'} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v, name) => [v, String(name).charAt(0).toUpperCase() + String(name).slice(1)]} contentStyle={{ borderRadius: '12px', border: '1px solid var(--line)', fontSize: '12px', background: 'var(--glass-thin)' }} />
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  <p className="text-xs text-gray-400">Total</p>
-                  <p className="text-lg font-bold text-gray-900">{totalEnrollments}</p>
-                </div>
-              </div>
-              <div className="flex-1 space-y-2">
-                {enrollmentsByStatus.map(({ status, count }) => (
-                  <div key={status} className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: STATUS_COLORS[status] ?? '#9ca3af' }} />
-                      <span className="text-xs text-gray-500 capitalize">{status}</span>
-                    </div>
-                    <span className="text-xs font-semibold text-gray-700">{count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Top classes */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Top Classes by Enrollment</h2>
-          {topClasses.length === 0 ? (
-            <div className="py-12 text-center text-gray-400 text-sm">No enrollment data yet</div>
+            <p className="muted" style={{ fontSize: 13 }}>No enrollment data yet.</p>
           ) : (
             <div className="space-y-3">
-              {topClasses.map(({ name, count }) => (
-                <div key={name}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium text-gray-700 truncate max-w-[200px]">{name}</span>
-                    <span className="text-xs text-gray-500 ml-2 flex-shrink-0">{count}</span>
-                  </div>
-                  <div className="progress">
-                    <div className="fill" style={{ width: `${(count / maxClassCount) * 100}%` }} />
-                  </div>
-                </div>
+              {enrollmentsByStatus.map(s => (
+                <HBar
+                  key={s.status}
+                  label={s.status}
+                  value={s.count}
+                  total={totalEnrollments}
+                  color={STATUS_COLORS[s.status] ?? '#9ca3af'}
+                />
               ))}
             </div>
           )}
         </div>
-      </div>
+      </section>
+
+      <hr className="section-rule" />
+
+      <section>
+        <SectionHead label="Top classes by enrollment" />
+        {topClasses.length === 0 ? (
+          <p className="muted" style={{ fontSize: 13 }}>No enrollment data yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-3">
+            {topClasses.map((c, i) => (
+              <HBar
+                key={c.name}
+                label={c.name}
+                value={c.count}
+                total={maxClassCount}
+                color={TYPE_COLORS[i % TYPE_COLORS.length]}
+              />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }

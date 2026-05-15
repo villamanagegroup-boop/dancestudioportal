@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import Header from '@/components/admin/Header'
 import ReportsView from '@/components/admin/ReportsView'
+import ReportsLibrary from '@/components/admin/ReportsLibrary'
+import ReportsTabs from '@/components/admin/ReportsTabs'
 
 export default async function ReportsPage() {
   const supabase = createAdminClient()
@@ -84,20 +86,35 @@ export default async function ReportsPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Reports" subtitle="Studio performance and enrollment analytics" />
-      <div className="p-6 overflow-auto">
-        <ReportsView
-          revenueAllTime={sum(paidAllTime)}
-          revenueThisMonth={sum(paidThisMonth)}
-          revenueThisYear={sum(paidThisYear)}
-          totalStudents={totalStudents ?? 0}
-          activeStudents={activeStudents ?? 0}
-          enrollmentsByStatus={statusCounts}
-          topClasses={classCounts}
-          monthlyRevenue={monthlyRevenue}
-          revenueByType={revenueByType}
-          outstanding={outstanding}
-          overdue={overdue}
-        />
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            <div className="mb-7">
+              <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>Performance</p>
+              <p className="mt-1.5" style={{ fontSize: 15, fontWeight: 500, color: 'var(--ink-2)', letterSpacing: '-0.005em' }}>
+                Studio performance and the full reports library.
+              </p>
+            </div>
+          <ReportsTabs
+            analytics={(
+              <ReportsView
+                revenueAllTime={sum(paidAllTime)}
+                revenueThisMonth={sum(paidThisMonth)}
+                revenueThisYear={sum(paidThisYear)}
+                totalStudents={totalStudents ?? 0}
+                activeStudents={activeStudents ?? 0}
+                enrollmentsByStatus={statusCounts}
+                topClasses={classCounts}
+                monthlyRevenue={monthlyRevenue}
+                revenueByType={revenueByType}
+                outstanding={outstanding}
+                overdue={overdue}
+              />
+            )}
+            library={<ReportsLibrary />}
+          />
+          </div>
+        </div>
       </div>
     </div>
   )

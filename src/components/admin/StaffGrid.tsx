@@ -4,8 +4,10 @@ import { useState, useMemo } from 'react'
 import Link from 'next/link'
 import { ChevronUp, ChevronDown, Plus, Search, Pencil, ShieldAlert, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { ROLE_LABELS, isStaffRole } from '@/lib/permissions'
 import RowActions from '@/components/admin/RowActions'
 import StaffFormModal from '@/components/forms/StaffFormModal'
+import KpiStrip from '@/components/admin/KpiStrip'
 
 interface Instructor {
   id: string
@@ -17,6 +19,7 @@ interface Instructor {
   specialties: string[] | null
   pay_rate: number | null
   pay_type: string | null
+  staff_role: string | null
   background_check_date: string | null
   background_check_expires: string | null
   active: boolean
@@ -49,17 +52,6 @@ function SortBtn({ col, label, activeKey, dir, onToggle }: {
         ? dir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
         : <ChevronUp size={12} className="text-gray-300" />}
     </button>
-  )
-}
-
-function StatCard({ label, value, tone }: { label: string; value: string; tone?: 'warn' | 'danger' }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className={cn('text-2xl font-semibold mt-1', tone === 'danger' ? 'text-red-600' : tone === 'warn' ? 'text-amber-600' : 'text-gray-900')}>
-        {value}
-      </p>
-    </div>
   )
 }
 
@@ -110,12 +102,14 @@ export default function StaffGrid({ instructors }: { instructors: Instructor[] }
 
   return (
     <>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatCard label="Total Staff" value={String(stats.total)} />
-        <StatCard label="Active" value={String(stats.active)} />
-        <StatCard label="BG Check Expiring" value={String(stats.expiring)} tone={stats.expiring ? 'warn' : undefined} />
-        <StatCard label="BG Check Expired" value={String(stats.expired)} tone={stats.expired ? 'danger' : undefined} />
-      </div>
+      <KpiStrip items={[
+        { label: 'Total staff', value: String(stats.total) },
+        { label: 'Active', value: String(stats.active) },
+        { label: 'BG check expiring', value: String(stats.expiring) },
+        { label: 'BG check expired', value: String(stats.expired) },
+      ]} />
+
+      <hr className="section-rule" />
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative flex-1 min-w-[200px]">
@@ -184,6 +178,9 @@ export default function StaffGrid({ instructors }: { instructors: Instructor[] }
                       )}
                     </h3>
                     <p className="text-sm text-gray-500 mt-0.5">{instructor.email}</p>
+                    <span className="inline-block mt-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-studio-50 text-studio-700">
+                      {isStaffRole(instructor.staff_role) ? ROLE_LABELS[instructor.staff_role] : 'Instructor'}
+                    </span>
                     {instructor.specialties && instructor.specialties.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-3">
                         {instructor.specialties.slice(0, 3).map(s => (

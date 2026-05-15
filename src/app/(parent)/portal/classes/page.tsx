@@ -1,6 +1,7 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { formatTime, cn } from '@/lib/utils'
 import ClassEnrollCard from '@/components/portal/ClassEnrollCard'
+import SectionHead from '@/components/admin/SectionHead'
 
 const NO_ID = '00000000-0000-0000-0000-000000000000'
 
@@ -37,7 +38,6 @@ export default async function ParentClassesPage() {
       .order('day_of_week').order('start_time'),
   ])
 
-  // Active enrollment counts → spots left
   const classIds = (availableClasses ?? []).map(c => c.id)
   const activeCounts: Record<string, number> = {}
   if (classIds.length > 0) {
@@ -57,80 +57,81 @@ export default async function ParentClassesPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <h1 className="text-2xl font-bold text-gray-900">Classes</h1>
+    <div>
+      <div className="mb-7">
+        <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>Classes</p>
+        <h1 className="h1 mt-2" style={{ fontSize: 26, letterSpacing: '-0.02em' }}>
+          Your dancers' schedule.
+        </h1>
+        <p className="mt-1.5" style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-2)' }}>
+          {enrollments?.length
+            ? `${enrollments.length} active enrollment${enrollments.length === 1 ? '' : 's'} across ${students.length} dancer${students.length === 1 ? '' : 's'}.`
+            : 'No active enrollments yet — browse open classes below.'}
+        </p>
+      </div>
 
-      {/* Enrolled classes */}
-      <section>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Enrolled Classes</h2>
-        {!enrollments?.length ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400 text-sm shadow-sm">
-            No active enrollments
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {enrollments.map((e: any) => (
-              <div key={e.id} className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-                <div className="flex items-start justify-between mb-2">
-                  <h3 className="font-semibold text-gray-900">{e.class?.name}</h3>
-                  <span className={cn('text-xs font-medium px-2 py-1 rounded-full',
-                    e.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-                  )}>
-                    {e.status}
-                  </span>
-                </div>
-                <p className="text-xs text-gray-400 mb-1">{studentName(e.student_id)}</p>
-                <p className="text-sm text-gray-600 capitalize">
-                  {e.class?.day_of_week} · {formatTime(e.class?.start_time)} – {formatTime(e.class?.end_time)}
-                </p>
-                {e.class?.instructor && (
-                  <p className="text-sm text-gray-500">{e.class.instructor.first_name} {e.class.instructor.last_name}</p>
-                )}
-                {e.class?.room && <p className="text-sm text-gray-500">{e.class.room.name}</p>}
-                <p className="text-sm font-semibold text-gray-900 mt-2">${e.class?.monthly_tuition}/mo</p>
+      <SectionHead label="Enrolled classes" />
+      {!enrollments?.length ? (
+        <p className="muted" style={{ fontSize: 13 }}>No active enrollments.</p>
+      ) : (
+        <div className="tight-list">
+          {enrollments.map((e: any) => (
+            <div key={e.id} className="tl-row">
+              <div className="tl-lead">
+                <div className="t" style={{ textTransform: 'capitalize' }}>{e.class?.day_of_week?.slice(0, 3)}</div>
+                <div className="s">{formatTime(e.class?.start_time)}</div>
               </div>
-            ))}
-          </div>
-        )}
-      </section>
+              <div className="tl-main">
+                <div className="t">{e.class?.name}</div>
+                <div className="s">
+                  {studentName(e.student_id)}
+                  {e.class?.instructor && <> · {e.class.instructor.first_name} {e.class.instructor.last_name}</>}
+                  {e.class?.room && <> · {e.class.room.name}</>}
+                </div>
+              </div>
+              <div className="tl-trail">
+                <span className={cn('tag', e.status === 'active' ? 'tag-mint' : 'tag-amber')}>{e.status}</span>
+                <span style={{ fontWeight: 600, color: 'var(--ink-1)' }}>${e.class?.monthly_tuition}/mo</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Available classes */}
-      <section>
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Open for Registration</h2>
-        {!availableClasses?.length ? (
-          <div className="bg-white rounded-xl border border-gray-100 p-8 text-center text-gray-400 text-sm shadow-sm">
-            No classes open for registration right now
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {availableClasses.map((cls: any) => {
-              const spotsLeft =
-                cls.max_students != null
-                  ? Math.max(0, cls.max_students - (activeCounts[cls.id] ?? 0))
-                  : null
-              return (
-                <ClassEnrollCard
-                  key={cls.id}
-                  cls={{
-                    id: cls.id,
-                    name: cls.name,
-                    day_of_week: cls.day_of_week,
-                    start_time: cls.start_time,
-                    end_time: cls.end_time,
-                    monthly_tuition: Number(cls.monthly_tuition),
-                    color: cls.class_type?.color ?? '#7c3aed',
-                    instructorName: cls.instructor
-                      ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
-                      : null,
-                    spotsLeft,
-                  }}
-                  students={students}
-                />
-              )
-            })}
-          </div>
-        )}
-      </section>
+      <hr className="section-rule" />
+
+      <SectionHead label="Open for registration" />
+      {!availableClasses?.length ? (
+        <p className="muted" style={{ fontSize: 13 }}>No classes open for registration right now.</p>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {availableClasses.map((cls: any) => {
+            const spotsLeft =
+              cls.max_students != null
+                ? Math.max(0, cls.max_students - (activeCounts[cls.id] ?? 0))
+                : null
+            return (
+              <ClassEnrollCard
+                key={cls.id}
+                cls={{
+                  id: cls.id,
+                  name: cls.name,
+                  day_of_week: cls.day_of_week,
+                  start_time: cls.start_time,
+                  end_time: cls.end_time,
+                  monthly_tuition: Number(cls.monthly_tuition),
+                  color: cls.class_type?.color ?? '#7c3aed',
+                  instructorName: cls.instructor
+                    ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
+                    : null,
+                  spotsLeft,
+                }}
+                students={students}
+              />
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

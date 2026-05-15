@@ -8,6 +8,7 @@ import {
   Clock, Users, CheckCircle2, Inbox,
 } from 'lucide-react'
 import ComposeMessageModal from '@/components/forms/ComposeMessageModal'
+import KpiStrip from '@/components/admin/KpiStrip'
 
 interface Communication {
   id: string
@@ -69,17 +70,6 @@ function dt(s: string | null) {
   return new Date(s).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
 }
 
-function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <div className="flex items-center gap-2 mb-1">
-        <Icon size={14} className="text-studio-600" />
-        <p className="text-xs font-medium text-gray-500">{label}</p>
-      </div>
-      <p className="text-2xl font-semibold text-gray-900">{value}</p>
-    </div>
-  )
-}
 
 export default function CommunicationsPanel({ communications, classes, guardians, instructors }: Props) {
   const router = useRouter()
@@ -166,12 +156,14 @@ export default function CommunicationsPanel({ communications, classes, guardians
 
   return (
     <>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatCard icon={Inbox} label="Total Messages" value={String(stats.total)} />
-        <StatCard icon={CheckCircle2} label="Sent" value={String(stats.sent)} />
-        <StatCard icon={Clock} label="Scheduled" value={String(stats.scheduled)} />
-        <StatCard icon={Users} label="Recipients Reached" value={String(stats.reached)} />
-      </div>
+      <KpiStrip items={[
+        { label: 'Total messages', value: String(stats.total) },
+        { label: 'Sent', value: String(stats.sent) },
+        { label: 'Scheduled', value: String(stats.scheduled) },
+        { label: 'Recipients reached', value: String(stats.reached) },
+      ]} />
+
+      <hr className="section-rule" />
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="relative flex-1 min-w-[200px]">
@@ -205,7 +197,7 @@ export default function CommunicationsPanel({ communications, classes, guardians
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* Inbox list */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="lg:col-span-2 rounded-xl overflow-hidden" style={{ border: '1px solid var(--line)', background: 'rgba(255,255,255,0.35)' }}>
           {filtered.length === 0 ? (
             <div className="py-16 flex flex-col items-center gap-2 text-center">
               <Inbox size={28} className="text-gray-300" />
@@ -248,7 +240,7 @@ export default function CommunicationsPanel({ communications, classes, guardians
         </div>
 
         {/* Detail */}
-        <div className="lg:col-span-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+        <div className="lg:col-span-3 rounded-xl" style={{ border: '1px solid var(--line)', background: 'rgba(255,255,255,0.35)' }}>
           {!selected ? (
             <div className="py-24 flex flex-col items-center gap-2 text-center">
               <Mail size={28} className="text-gray-300" />

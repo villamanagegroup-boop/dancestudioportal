@@ -8,8 +8,8 @@ type PortalKey = 'admin' | 'instructor' | 'parent'
 
 const PORTALS: { key: PortalKey; label: string; href: string; icon: React.ElementType }[] = [
   { key: 'admin', label: 'Admin', href: '/dashboard', icon: Shield },
-  { key: 'instructor', label: 'Instructor', href: '/my-classes', icon: GraduationCap },
-  { key: 'parent', label: 'Parent', href: '/portal', icon: Users },
+  { key: 'instructor', label: 'Instructor', href: '/instructor/dashboard', icon: GraduationCap },
+  { key: 'parent', label: 'My Portal', href: '/portal', icon: Users },
 ]
 
 interface Props {

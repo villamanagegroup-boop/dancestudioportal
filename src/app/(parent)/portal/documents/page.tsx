@@ -1,5 +1,5 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
-import { formatDate, cn } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import { CheckCircle, AlertCircle } from 'lucide-react'
 import DocumentUpload from '@/components/portal/DocumentUpload'
 
@@ -21,37 +21,48 @@ export default async function ParentDocumentsPage() {
     .eq('guardian_id', gid)
 
   const signedTypes = new Set(documents?.filter(d => d.signed_at).map(d => d.document_type) ?? [])
+  const signedCount = signedTypes.size
+  const totalCount = REQUIRED_DOCUMENTS.length
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Documents</h1>
-      <p className="text-gray-500 text-sm">Required forms and waivers for studio participation.</p>
+    <div>
+      <div className="mb-7">
+        <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>Documents</p>
+        <h1 className="h1 mt-2" style={{ fontSize: 26, letterSpacing: '-0.02em' }}>
+          Required forms & waivers.
+        </h1>
+        <p className="mt-1.5" style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-2)' }}>
+          {signedCount === totalCount
+            ? 'All required documents are on file.'
+            : `${signedCount} of ${totalCount} signed — please complete the remaining ${totalCount - signedCount}.`}
+        </p>
+      </div>
 
-      <div className="space-y-4">
+      <div className="tight-list">
         {REQUIRED_DOCUMENTS.map(doc => {
           const signed = signedTypes.has(doc.type)
+          const signedAt = documents?.find(d => d.document_type === doc.type)?.signed_at
           return (
-            <div key={doc.type} className={cn(
-              'bg-white rounded-xl border shadow-sm p-5 flex items-center justify-between gap-4',
-              signed ? 'border-green-100' : 'border-orange-100'
-            )}>
-              <div className="flex items-center gap-3">
-                {signed ? (
-                  <CheckCircle size={20} className="text-green-500 flex-shrink-0" />
-                ) : (
-                  <AlertCircle size={20} className="text-orange-500 flex-shrink-0" />
-                )}
-                <div>
-                  <p className="font-semibold text-gray-900">{doc.title}</p>
-                  <p className="text-sm text-gray-500">{doc.description}</p>
-                  {signed && documents?.find(d => d.document_type === doc.type)?.signed_at && (
-                    <p className="text-xs text-green-600 mt-0.5">
-                      Signed {formatDate(documents.find(d => d.document_type === doc.type)!.signed_at!)}
-                    </p>
-                  )}
+            <div key={doc.type} className="tl-row no-lead">
+              <div className="tl-main">
+                <div className="t flex items-center gap-2">
+                  {signed
+                    ? <CheckCircle size={14} style={{ color: '#16a34a' }} />
+                    : <AlertCircle size={14} style={{ color: '#d97706' }} />
+                  }
+                  {doc.title}
+                </div>
+                <div className="s">
+                  {doc.description}
+                  {signed && signedAt && <> · Signed {formatDate(signedAt)}</>}
                 </div>
               </div>
-              {!signed && <DocumentUpload documentType={doc.type} title={doc.title} />}
+              <div className="tl-trail">
+                {signed
+                  ? <span className="tag tag-mint">Signed</span>
+                  : <DocumentUpload documentType={doc.type} title={doc.title} />
+                }
+              </div>
             </div>
           )
         })}

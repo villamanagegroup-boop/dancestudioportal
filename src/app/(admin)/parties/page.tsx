@@ -17,8 +17,18 @@ export default async function PartiesPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Events" subtitle="Birthday parties, recitals, and studio events" />
-      <div className="p-6 overflow-y-auto">
-        <EventsDashboard parties={(parties ?? []) as any} rooms={rooms ?? []} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            <div className="mb-7">
+              <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>Calendar</p>
+              <p className="mt-1.5" style={{ fontSize: 15, fontWeight: 500, color: 'var(--ink-2)', letterSpacing: '-0.005em' }}>
+                What&apos;s on the studio calendar — parties, recitals, and events.
+              </p>
+            </div>
+            <EventsDashboard parties={(parties ?? []) as any} rooms={rooms ?? []} />
+          </div>
+        </div>
       </div>
     </div>
   )

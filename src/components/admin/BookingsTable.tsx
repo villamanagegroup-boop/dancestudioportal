@@ -5,6 +5,7 @@ import { Plus, CalendarCheck, ChevronUp, ChevronDown, Search, Pencil } from 'luc
 import { formatCurrency, cn } from '@/lib/utils'
 import BookingFormModal from '@/components/forms/BookingFormModal'
 import RowActions from '@/components/admin/RowActions'
+import KpiStrip from '@/components/admin/KpiStrip'
 
 interface Booking {
   id: string
@@ -54,15 +55,6 @@ function SortIcon({ col, sortKey, sortDir }: { col: SortKey; sortKey: SortKey; s
   return sortDir === 'asc'
     ? <ChevronUp size={12} className="text-studio-600 ml-1 inline" />
     : <ChevronDown size={12} className="text-studio-600 ml-1 inline" />
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
-      <p className="text-xs font-medium text-gray-500">{label}</p>
-      <p className="text-2xl font-semibold text-gray-900 mt-1">{value}</p>
-    </div>
-  )
 }
 
 export default function BookingsTable({ bookings, rooms, partners }: {
@@ -129,15 +121,17 @@ export default function BookingsTable({ bookings, rooms, partners }: {
 
   return (
     <>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
-        <StatCard label="Total Bookings" value={String(stats.total)} />
-        <StatCard label="Upcoming" value={String(stats.upcoming)} />
-        <StatCard label="Next 7 Days" value={String(stats.thisWeek)} />
-        <StatCard label="Booked Revenue" value={formatCurrency(stats.revenue)} />
-      </div>
+      <KpiStrip items={[
+        { label: 'Total bookings', value: String(stats.total) },
+        { label: 'Upcoming', value: String(stats.upcoming) },
+        { label: 'Next 7 days', value: String(stats.thisWeek) },
+        { label: 'Booked revenue', value: formatCurrency(stats.revenue) },
+      ]} />
 
-      <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="px-5 py-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
+      <hr className="section-rule" />
+
+      <div>
+        <div className="pb-4 mb-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-1 rounded-lg bg-gray-100 p-0.5">
             {(['upcoming', 'past', 'all'] as Scope[]).map(s => (
               <button

@@ -26,13 +26,17 @@ export default async function CommunicationsPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Communications" subtitle="Studio inbox — message families, classes, and staff" />
-      <div className="p-6 overflow-y-auto">
-        <CommunicationsPanel
-          communications={(communications ?? []) as any}
-          classes={classes ?? []}
-          guardians={guardians ?? []}
-          instructors={instructors ?? []}
-        />
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            <CommunicationsPanel
+              communications={(communications ?? []) as any}
+              classes={classes ?? []}
+              guardians={guardians ?? []}
+              instructors={instructors ?? []}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

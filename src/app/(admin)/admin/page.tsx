@@ -41,8 +41,18 @@ export default async function AdminPage() {
   return (
     <div className="flex flex-col h-full">
       <Header title="Admin" subtitle="Billing, reporting, and staff management" />
-      <div className="p-6 overflow-y-auto">
-        <AdminDashboard stats={stats} />
+      <div className="flex-1 overflow-y-auto">
+        <div className="page-gutter min-h-full">
+          <div className="glass glass-page min-h-full">
+            <div className="mb-7">
+              <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>Operations</p>
+              <p className="mt-1.5" style={{ fontSize: 15, fontWeight: 500, color: 'var(--ink-2)', letterSpacing: '-0.005em' }}>
+                Billing, reporting, and your team&apos;s status.
+              </p>
+            </div>
+            <AdminDashboard stats={stats} />
+          </div>
+        </div>
       </div>
     </div>
   )
