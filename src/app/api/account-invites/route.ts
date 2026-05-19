@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendAccountInvite } from '@/lib/resend'
 
 const EXPIRY_DAYS = 7
-const VALID_ROLES = new Set(['parent', 'instructor'])
+const VALID_ROLES = new Set(['parent', 'instructor', 'partner'])
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     await sendAccountInvite({
       to: email,
       firstName: first_name,
-      role: role as 'parent' | 'instructor',
+      role: role as 'parent' | 'instructor' | 'partner',
       inviterName: `${caller.first_name ?? ''} ${caller.last_name ?? ''}`.trim() || 'The studio',
       acceptUrl,
     })

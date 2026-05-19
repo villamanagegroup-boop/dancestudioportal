@@ -3,25 +3,41 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-type Role = 'parent' | 'instructor'
+type Role = 'parent' | 'instructor' | 'partner'
 
 type Props = {
   role: Role
   onClose: () => void
 }
 
-const LABELS: Record<Role, { title: string; subtitle: string; submit: string }> = {
+const LABELS: Record<Role, { title: string; subtitle: string; submit: string; emailPlaceholder: string }> = {
   parent: {
     title: 'Invite family',
     subtitle: 'Sends a one-time signup link. The parent sets their own password and completes their profile.',
     submit: 'Send invite',
+    emailPlaceholder: 'parent@example.com',
   },
   instructor: {
     title: 'Invite instructor',
     subtitle: 'Sends a one-time signup link. The instructor sets their own password.',
     submit: 'Send invite',
+    emailPlaceholder: 'instructor@example.com',
+  },
+  partner: {
+    title: 'Invite partner',
+    subtitle: 'Sends a one-time signup link to your contact at the partner business. They set their own password and complete their business profile.',
+    submit: 'Send invite',
+    emailPlaceholder: 'contact@partnerbusiness.com',
   },
 }
+
+const PARTNER_TYPES = [
+  { value: 'business', label: 'Business' },
+  { value: 'studio', label: 'Other studio' },
+  { value: 'vendor', label: 'Vendor' },
+  { value: 'venue', label: 'Venue' },
+  { value: 'other', label: 'Other' },
+]
 
 export default function InviteAccountModal({ role, onClose }: Props) {
   const router = useRouter()
@@ -30,6 +46,9 @@ export default function InviteAccountModal({ role, onClose }: Props) {
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
   const [phone, setPhone] = useState('')
+  const [businessName, setBusinessName] = useState('')
+  const [partnerType, setPartnerType] = useState('business')
+  const [website, setWebsite] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<{ emailed: boolean; acceptUrl: string; warning?: string } | null>(null)
@@ -40,7 +59,12 @@ export default function InviteAccountModal({ role, onClose }: Props) {
     setError('')
     try {
       const metadata: Record<string, unknown> = {}
-      if (role === 'parent' && phone.trim()) metadata.phone = phone.trim()
+      if (phone.trim()) metadata.phone = phone.trim()
+      if (role === 'partner') {
+        if (businessName.trim()) metadata.business_name = businessName.trim()
+        if (partnerType) metadata.partner_type = partnerType
+        if (website.trim()) metadata.website = website.trim()
+      }
 
       const res = await fetch('/api/account-invites', {
         method: 'POST',
@@ -82,7 +106,8 @@ export default function InviteAccountModal({ role, onClose }: Props) {
         onClick={e => e.stopPropagation()}
         style={{
           background: 'white', borderRadius: 12, padding: 24,
-          maxWidth: 480, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          maxWidth: 520, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+          maxHeight: '90vh', overflowY: 'auto',
         }}
       >
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{labels.title}</h2>
@@ -125,6 +150,32 @@ export default function InviteAccountModal({ role, onClose }: Props) {
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
+            {role === 'partner' && (
+              <>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Business name</label>
+                  <input
+                    type="text" required value={businessName}
+                    onChange={e => setBusinessName(e.target.value)} disabled={submitting}
+                    placeholder="Acme Catering"
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14 }}
+                  />
+                </div>
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Partner type</label>
+                  <select
+                    value={partnerType} onChange={e => setPartnerType(e.target.value)} disabled={submitting}
+                    style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14 }}
+                  >
+                    {PARTNER_TYPES.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
+                  </select>
+                </div>
+              </>
+            )}
+
+            <p style={{ fontSize: 11, fontWeight: 600, color: '#999', textTransform: 'uppercase', marginBottom: 8, marginTop: role === 'partner' ? 16 : 0 }}>
+              {role === 'partner' ? 'Primary contact' : 'Account holder'}
+            </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
               <div>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>First name</label>
@@ -148,12 +199,12 @@ export default function InviteAccountModal({ role, onClose }: Props) {
               <input
                 type="email" required value={email}
                 onChange={e => setEmail(e.target.value)} disabled={submitting}
-                placeholder={role === 'parent' ? 'parent@example.com' : 'instructor@example.com'}
+                placeholder={labels.emailPlaceholder}
                 style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14 }}
               />
             </div>
-            {role === 'parent' && (
-              <div style={{ marginBottom: 16 }}>
+            {(role === 'parent' || role === 'partner') && (
+              <div style={{ marginBottom: 12 }}>
                 <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
                   Phone <span style={{ color: '#999', fontWeight: 400 }}>(optional)</span>
                 </label>
@@ -161,6 +212,19 @@ export default function InviteAccountModal({ role, onClose }: Props) {
                   type="tel" value={phone}
                   onChange={e => setPhone(e.target.value)} disabled={submitting}
                   placeholder="(555) 555-5555"
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14 }}
+                />
+              </div>
+            )}
+            {role === 'partner' && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                  Website <span style={{ color: '#999', fontWeight: 400 }}>(optional)</span>
+                </label>
+                <input
+                  type="url" value={website}
+                  onChange={e => setWebsite(e.target.value)} disabled={submitting}
+                  placeholder="https://example.com"
                   style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14 }}
                 />
               </div>

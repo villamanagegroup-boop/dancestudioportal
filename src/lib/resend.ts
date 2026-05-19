@@ -105,16 +105,19 @@ export async function sendStudioAnnouncement({
 export async function sendAccountInvite({
   to, firstName, role, inviterName, acceptUrl,
 }: {
-  to: string; firstName: string; role: 'parent' | 'instructor'
+  to: string; firstName: string; role: 'parent' | 'instructor' | 'partner'
   inviterName: string; acceptUrl: string
 }) {
-  const isInstructor = role === 'instructor'
-  const subject = isInstructor
+  const subject = role === 'instructor'
     ? `You're invited to the Capital Core Dance Studio staff portal`
-    : `${inviterName} invited your family to Capital Core Dance Studio`
-  const intro = isInstructor
+    : role === 'partner'
+      ? `${inviterName} invited your business to partner with Capital Core Dance Studio`
+      : `${inviterName} invited your family to Capital Core Dance Studio`
+  const intro = role === 'instructor'
     ? `${inviterName} has invited you to join the Capital Core Dance Studio staff portal as an instructor.`
-    : `${inviterName} has invited your family to the Capital Core Dance Studio parent portal — where you'll enroll your dancer, manage billing, and stay in the loop on studio news.`
+    : role === 'partner'
+      ? `${inviterName} has invited your business to partner with Capital Core Dance Studio. Accept the invite to set up your partner portal — where you'll see bookings, events, and stay coordinated with the studio.`
+      : `${inviterName} has invited your family to the Capital Core Dance Studio parent portal — where you'll enroll your dancer, manage billing, and stay in the loop on studio news.`
   await send({
     from: FROM(),
     to,

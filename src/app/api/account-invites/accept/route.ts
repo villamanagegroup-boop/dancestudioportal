@@ -95,6 +95,27 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  if (invite.role === 'partner') {
+    const partnerName = typeof metadata.business_name === 'string' && metadata.business_name.trim()
+      ? metadata.business_name.trim()
+      : `${invite.first_name} ${invite.last_name}`.trim()
+    const { error: partnerErr } = await admin.from('partners').insert({
+      name: partnerName,
+      contact_name: `${invite.first_name} ${invite.last_name}`.trim(),
+      email: invite.email,
+      phone: typeof metadata.phone === 'string' ? metadata.phone : null,
+      website: typeof metadata.website === 'string' ? metadata.website : null,
+      partner_type: typeof metadata.partner_type === 'string' ? metadata.partner_type : 'business',
+      profile_id: newUserId,
+      active: true,
+    })
+    if (partnerErr) {
+      return NextResponse.json({
+        error: `User created but partner record failed: ${partnerErr.message}. An admin can fix from the Partners page.`,
+      }, { status: 500 })
+    }
+  }
+
   if (invite.role === 'parent' && metadata.dancer && metadata.dancer.first_name && metadata.dancer.date_of_birth) {
     const { data: student } = await admin.from('students').insert({
       first_name: metadata.dancer.first_name,

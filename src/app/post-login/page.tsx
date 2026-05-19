@@ -41,5 +41,6 @@ export default async function PostLoginPage({
 
   if (profile?.role === 'admin') redirect('/dashboard')
   if (profile?.role === 'instructor') redirect('/instructor/dashboard')
+  if (profile?.role === 'partner') redirect('/partner/dashboard')
   redirect('/portal')
 }

@@ -47,6 +47,19 @@ export async function proxy(request: NextRequest) {
     if (!user) return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  if (request.nextUrl.pathname.startsWith('/partner')) {
+    if (!user) return NextResponse.redirect(new URL('/login', request.url))
+    const admin = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data: profile } = await admin
+      .from('profiles').select('role').eq('id', user.id).single()
+    if (profile?.role !== 'partner' && profile?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/portal', request.url))
+    }
+  }
+
   return supabaseResponse
 }
 
@@ -55,5 +68,6 @@ export const config = {
     '/dashboard/:path*', '/students/:path*', '/classes/:path*',
     '/enrollments/:path*', '/billing/:path*', '/staff/:path*',
     '/communications/:path*', '/settings/:path*', '/portal/:path*',
+    '/partner/:path*',
   ],
 }

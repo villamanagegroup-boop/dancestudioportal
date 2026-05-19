@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Plus, Search, Pencil, Handshake, Globe, Mail, Phone } from 'lucide-react'
+import InviteAccountModal from '@/components/forms/InviteAccountModal'
 import { cn, formatCurrency } from '@/lib/utils'
 import RowActions from '@/components/admin/RowActions'
 import PartnerFormModal from '@/components/forms/PartnerFormModal'
@@ -35,6 +36,7 @@ const RATE_UNIT_LABEL: Record<string, string> = {
 
 export default function PartnersManager({ partners }: { partners: Partner[] }) {
   const [showAdd, setShowAdd] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
   const [editing, setEditing] = useState<Partner | null>(null)
   const [query, setQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState('')
@@ -88,12 +90,20 @@ export default function PartnersManager({ partners }: { partners: Partner[] }) {
           <option value="inactive">Archived</option>
           <option value="all">All</option>
         </select>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 transition-colors ml-auto"
-        >
-          <Plus size={16} /> Add Partner
-        </button>
+        <div className="flex gap-2 ml-auto">
+          <button
+            onClick={() => setShowInvite(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-studio-600 text-studio-700 text-sm font-medium hover:bg-studio-50 transition-colors"
+          >
+            <Mail size={16} /> Invite Partner
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 transition-colors"
+          >
+            <Plus size={16} /> Add Partner
+          </button>
+        </div>
       </div>
 
       {filtered.length === 0 ? (
@@ -160,6 +170,7 @@ export default function PartnersManager({ partners }: { partners: Partner[] }) {
       )}
 
       {showAdd && <PartnerFormModal onClose={() => setShowAdd(false)} />}
+      {showInvite && <InviteAccountModal role="partner" onClose={() => setShowInvite(false)} />}
       {editing && <PartnerFormModal onClose={() => setEditing(null)} partner={editing} />}
     </>
   )

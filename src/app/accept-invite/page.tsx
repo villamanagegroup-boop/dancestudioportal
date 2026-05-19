@@ -12,7 +12,7 @@ export default function AcceptInvitePage() {
   )
 }
 
-type InviteData = { email: string; first_name: string; last_name: string; role: 'parent' | 'instructor' }
+type InviteData = { email: string; first_name: string; last_name: string; role: 'parent' | 'instructor' | 'partner' }
 
 function AcceptInviteInner() {
   const router = useRouter()
@@ -104,7 +104,7 @@ function AcceptInviteInner() {
       <h2 className="h2 mb-2" style={{ color: 'var(--ink-1)' }}>Accept invitation</h2>
       <p className="text-sm mb-6" style={{ color: 'var(--ink-3)' }}>
         Welcome, <strong>{invite.first_name}</strong>. Set a password to activate your
-        {invite.role === 'instructor' ? ' instructor' : ' parent portal'} account
+        {invite.role === 'instructor' ? ' instructor' : invite.role === 'partner' ? ' partner portal' : ' parent portal'} account
         for <strong>{invite.email}</strong>.
       </p>
       {submitError && (

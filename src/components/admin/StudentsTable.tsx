@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Search, Plus, ChevronRight, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search, Plus, ChevronRight, ChevronUp, ChevronDown, Mail } from 'lucide-react'
 import { getAgeFromDob } from '@/lib/utils'
 import StudentFormModal from '@/components/forms/StudentFormModal'
+import InviteAccountModal from '@/components/forms/InviteAccountModal'
 import RowActions from '@/components/admin/RowActions'
 
 type SortKey = 'name' | 'age' | 'guardian' | 'status'
@@ -37,6 +38,7 @@ interface Family {
 export default function StudentsTable({ students, families }: { students: Student[]; families: Family[] }) {
   const [search, setSearch] = useState('')
   const [showModal, setShowModal] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
 
@@ -77,6 +79,14 @@ export default function StudentsTable({ students, families }: { students: Studen
               className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:border-studio-500 focus:ring-1 focus:ring-studio-500"
             />
           </div>
+          <button
+            onClick={() => setShowInvite(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-studio-600 text-studio-700 text-sm font-medium hover:bg-studio-50 transition-colors"
+            title="Students belong to families — this invites a parent who then adds their dancer"
+          >
+            <Mail size={16} />
+            Invite Student
+          </button>
           <button
             onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 transition-colors"
@@ -150,6 +160,7 @@ export default function StudentsTable({ students, families }: { students: Studen
         )}
       </div>
       {showModal && <StudentFormModal onClose={() => setShowModal(false)} families={families} />}
+      {showInvite && <InviteAccountModal role="parent" onClose={() => setShowInvite(false)} />}
     </>
   )
 }
