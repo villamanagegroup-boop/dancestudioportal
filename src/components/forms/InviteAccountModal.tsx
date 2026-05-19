@@ -3,11 +3,33 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function InviteInstructorModal({ onClose }: { onClose: () => void }) {
+type Role = 'parent' | 'instructor'
+
+type Props = {
+  role: Role
+  onClose: () => void
+}
+
+const LABELS: Record<Role, { title: string; subtitle: string; submit: string }> = {
+  parent: {
+    title: 'Invite family',
+    subtitle: 'Sends a one-time signup link. The parent sets their own password and completes their profile.',
+    submit: 'Send invite',
+  },
+  instructor: {
+    title: 'Invite instructor',
+    subtitle: 'Sends a one-time signup link. The instructor sets their own password.',
+    submit: 'Send invite',
+  },
+}
+
+export default function InviteAccountModal({ role, onClose }: Props) {
   const router = useRouter()
+  const labels = LABELS[role]
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<{ emailed: boolean; acceptUrl: string; warning?: string } | null>(null)
@@ -17,10 +39,19 @@ export default function InviteInstructorModal({ onClose }: { onClose: () => void
     setSubmitting(true)
     setError('')
     try {
-      const res = await fetch('/api/instructor-invites', {
+      const metadata: Record<string, unknown> = {}
+      if (role === 'parent' && phone.trim()) metadata.phone = phone.trim()
+
+      const res = await fetch('/api/account-invites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, first_name: firstName, last_name: lastName }),
+        body: JSON.stringify({
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          role,
+          metadata,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -54,10 +85,8 @@ export default function InviteInstructorModal({ onClose }: { onClose: () => void
           maxWidth: 480, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
         }}
       >
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>Invite instructor</h2>
-        <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
-          Sends a one-time signup link. The instructor sets their own password.
-        </p>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{labels.title}</h2>
+        <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>{labels.subtitle}</p>
 
         {success ? (
           <div>
@@ -114,15 +143,28 @@ export default function InviteInstructorModal({ onClose }: { onClose: () => void
                 />
               </div>
             </div>
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 12 }}>
               <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Email</label>
               <input
                 type="email" required value={email}
                 onChange={e => setEmail(e.target.value)} disabled={submitting}
-                placeholder="instructor@example.com"
+                placeholder={role === 'parent' ? 'parent@example.com' : 'instructor@example.com'}
                 style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14 }}
               />
             </div>
+            {role === 'parent' && (
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                  Phone <span style={{ color: '#999', fontWeight: 400 }}>(optional)</span>
+                </label>
+                <input
+                  type="tel" value={phone}
+                  onChange={e => setPhone(e.target.value)} disabled={submitting}
+                  placeholder="(555) 555-5555"
+                  style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: 6, fontSize: 14 }}
+                />
+              </div>
+            )}
 
             {error && (
               <p style={{ fontSize: 13, color: '#dc2626', marginBottom: 12 }}>{error}</p>
@@ -146,7 +188,7 @@ export default function InviteInstructorModal({ onClose }: { onClose: () => void
                   border: 'none', borderRadius: 6, cursor: submitting ? 'wait' : 'pointer',
                 }}
               >
-                {submitting ? 'Sending…' : 'Send invite'}
+                {submitting ? 'Sending…' : labels.submit}
               </button>
             </div>
           </form>

@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendInstructorInvite } from '@/lib/resend'
+import { sendAccountInvite } from '@/lib/resend'
 
 const EXPIRY_DAYS = 7
+const VALID_ROLES = new Set(['parent', 'instructor'])
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -18,29 +19,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Admins only' }, { status: 403 })
   }
 
-  const body = await request.json() as { email?: string; first_name?: string; last_name?: string }
+  const body = await request.json() as {
+    email?: string; first_name?: string; last_name?: string
+    role?: string; metadata?: Record<string, unknown>
+  }
   const email = body.email?.trim().toLowerCase()
   const first_name = body.first_name?.trim()
   const last_name = body.last_name?.trim()
-  if (!email || !first_name || !last_name) {
-    return NextResponse.json({ error: 'Email, first name, and last name are required' }, { status: 400 })
+  const role = body.role?.trim()
+  if (!email || !first_name || !last_name || !role) {
+    return NextResponse.json({ error: 'Email, first name, last name, and role are required' }, { status: 400 })
+  }
+  if (!VALID_ROLES.has(role)) {
+    return NextResponse.json({ error: `Invalid role. Must be one of: ${[...VALID_ROLES].join(', ')}` }, { status: 400 })
   }
 
   const { data: existingUser } = await admin
     .from('profiles').select('id, role').eq('email', email).maybeSingle()
   if (existingUser) {
     return NextResponse.json({
-      error: `Account already exists for ${email} (role: ${existingUser.role}). Promote them in profiles instead of inviting.`,
+      error: `Account already exists for ${email} (role: ${existingUser.role}).`,
     }, { status: 409 })
   }
 
   const token = randomBytes(32).toString('hex')
   const expires_at = new Date(Date.now() + EXPIRY_DAYS * 24 * 60 * 60 * 1000).toISOString()
 
-  const { error: insertErr } = await admin.from('instructor_invites').insert({
+  const { error: insertErr } = await admin.from('account_invites').insert({
     email,
     first_name,
     last_name,
+    role,
+    metadata: body.metadata ?? {},
     token,
     invited_by: user.id,
     expires_at,
@@ -53,9 +63,10 @@ export async function POST(request: NextRequest) {
   const acceptUrl = `${appUrl.replace(/\/$/, '')}/accept-invite?token=${token}`
 
   try {
-    await sendInstructorInvite({
+    await sendAccountInvite({
       to: email,
       firstName: first_name,
+      role: role as 'parent' | 'instructor',
       inviterName: `${caller.first_name ?? ''} ${caller.last_name ?? ''}`.trim() || 'The studio',
       acceptUrl,
     })

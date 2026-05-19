@@ -102,18 +102,26 @@ export async function sendStudioAnnouncement({
   })
 }
 
-export async function sendInstructorInvite({
-  to, firstName, inviterName, acceptUrl,
+export async function sendAccountInvite({
+  to, firstName, role, inviterName, acceptUrl,
 }: {
-  to: string; firstName: string; inviterName: string; acceptUrl: string
+  to: string; firstName: string; role: 'parent' | 'instructor'
+  inviterName: string; acceptUrl: string
 }) {
+  const isInstructor = role === 'instructor'
+  const subject = isInstructor
+    ? `You're invited to the Capital Core Dance Studio staff portal`
+    : `${inviterName} invited your family to Capital Core Dance Studio`
+  const intro = isInstructor
+    ? `${inviterName} has invited you to join the Capital Core Dance Studio staff portal as an instructor.`
+    : `${inviterName} has invited your family to the Capital Core Dance Studio parent portal — where you'll enroll your dancer, manage billing, and stay in the loop on studio news.`
   await send({
     from: FROM(),
     to,
-    subject: `You're invited to the Capital Core Dance Studio staff portal`,
+    subject,
     html: `
       <h2>You're invited, ${firstName}!</h2>
-      <p>${inviterName} has invited you to join the Capital Core Dance Studio staff portal as an instructor.</p>
+      <p>${intro}</p>
       <p>
         <a href="${acceptUrl}" style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
           Accept invitation →

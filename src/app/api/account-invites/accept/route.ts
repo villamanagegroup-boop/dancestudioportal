@@ -7,8 +7,8 @@ export async function GET(request: NextRequest) {
 
   const admin = createAdminClient()
   const { data: invite } = await admin
-    .from('instructor_invites')
-    .select('email, first_name, last_name, expires_at, used_at')
+    .from('account_invites')
+    .select('email, first_name, last_name, role, expires_at, used_at')
     .eq('token', token)
     .maybeSingle()
 
@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
     email: invite.email,
     first_name: invite.first_name,
     last_name: invite.last_name,
+    role: invite.role,
   })
 }
 
@@ -38,8 +39,8 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
   const { data: invite } = await admin
-    .from('instructor_invites')
-    .select('id, email, first_name, last_name, expires_at, used_at')
+    .from('account_invites')
+    .select('id, email, first_name, last_name, role, metadata, expires_at, used_at')
     .eq('token', token)
     .maybeSingle()
 
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     user_metadata: {
       first_name: invite.first_name,
       last_name: invite.last_name,
-      role: 'instructor',
+      role: invite.role,
     },
   })
   if (createErr || !created?.user) {
@@ -64,26 +65,56 @@ export async function POST(request: NextRequest) {
   }
   const newUserId = created.user.id
 
-  await admin.from('profiles')
-    .update({ role: 'instructor', first_name: invite.first_name, last_name: invite.last_name })
-    .eq('id', newUserId)
+  const metadata = (invite.metadata ?? {}) as Record<string, any>
 
-  const { error: instrErr } = await admin.from('instructors').insert({
-    profile_id: newUserId,
+  const profileUpdate: Record<string, unknown> = {
+    role: invite.role,
     first_name: invite.first_name,
     last_name: invite.last_name,
-    email: invite.email,
-    active: true,
-  })
-  if (instrErr) {
-    return NextResponse.json({
-      error: `User created but instructor record failed: ${instrErr.message}. An admin can fix from the Staff page.`,
-    }, { status: 500 })
+  }
+  if (typeof metadata.phone === 'string') profileUpdate.phone = metadata.phone
+  if (typeof metadata.address_street === 'string') profileUpdate.address_street = metadata.address_street
+  if (typeof metadata.address_city === 'string') profileUpdate.address_city = metadata.address_city
+  if (typeof metadata.address_state === 'string') profileUpdate.address_state = metadata.address_state
+  if (typeof metadata.address_zip === 'string') profileUpdate.address_zip = metadata.address_zip
+
+  await admin.from('profiles').update(profileUpdate).eq('id', newUserId)
+
+  if (invite.role === 'instructor') {
+    const { error: instrErr } = await admin.from('instructors').insert({
+      profile_id: newUserId,
+      first_name: invite.first_name,
+      last_name: invite.last_name,
+      email: invite.email,
+      active: true,
+    })
+    if (instrErr) {
+      return NextResponse.json({
+        error: `User created but instructor record failed: ${instrErr.message}. An admin can fix from the Staff page.`,
+      }, { status: 500 })
+    }
   }
 
-  await admin.from('instructor_invites')
+  if (invite.role === 'parent' && metadata.dancer && metadata.dancer.first_name && metadata.dancer.date_of_birth) {
+    const { data: student } = await admin.from('students').insert({
+      first_name: metadata.dancer.first_name,
+      last_name: metadata.dancer.last_name || invite.last_name,
+      date_of_birth: metadata.dancer.date_of_birth,
+    }).select('id').single()
+
+    if (student) {
+      await admin.from('guardian_students').insert({
+        guardian_id: newUserId,
+        student_id: student.id,
+        relationship: 'parent',
+        is_primary: true,
+      })
+    }
+  }
+
+  await admin.from('account_invites')
     .update({ used_at: new Date().toISOString(), used_by: newUserId })
     .eq('id', invite.id)
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, role: invite.role })
 }

@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils'
 import { ROLE_LABELS, isStaffRole } from '@/lib/permissions'
 import RowActions from '@/components/admin/RowActions'
 import StaffFormModal from '@/components/forms/StaffFormModal'
-import InviteInstructorModal from '@/components/forms/InviteInstructorModal'
+import InviteAccountModal from '@/components/forms/InviteAccountModal'
 import KpiStrip from '@/components/admin/KpiStrip'
 
 interface Instructor {
@@ -227,7 +227,7 @@ export default function StaffGrid({ instructors }: { instructors: Instructor[] }
       )}
 
       {showAdd && <StaffFormModal onClose={() => setShowAdd(false)} />}
-      {showInvite && <InviteInstructorModal onClose={() => setShowInvite(false)} />}
+      {showInvite && <InviteAccountModal role="instructor" onClose={() => setShowInvite(false)} />}
       {editing && <StaffFormModal onClose={() => setEditing(null)} instructor={editing} />}
     </>
   )

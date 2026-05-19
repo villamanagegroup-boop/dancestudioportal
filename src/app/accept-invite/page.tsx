@@ -12,7 +12,7 @@ export default function AcceptInvitePage() {
   )
 }
 
-type InviteData = { email: string; first_name: string; last_name: string }
+type InviteData = { email: string; first_name: string; last_name: string; role: 'parent' | 'instructor' }
 
 function AcceptInviteInner() {
   const router = useRouter()
@@ -31,7 +31,7 @@ function AcceptInviteInner() {
       setLoadError('No invite token in URL.')
       return
     }
-    fetch(`/api/instructor-invites/accept?token=${encodeURIComponent(token)}`)
+    fetch(`/api/account-invites/accept?token=${encodeURIComponent(token)}`)
       .then(async res => {
         const data = await res.json()
         if (!res.ok) setLoadError(data.error ?? 'Invalid invite')
@@ -52,7 +52,7 @@ function AcceptInviteInner() {
     }
     setSubmitting(true)
     setSubmitError('')
-    const res = await fetch('/api/instructor-invites/accept', {
+    const res = await fetch('/api/account-invites/accept', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token, password }),
@@ -103,7 +103,8 @@ function AcceptInviteInner() {
     <Shell>
       <h2 className="h2 mb-2" style={{ color: 'var(--ink-1)' }}>Accept invitation</h2>
       <p className="text-sm mb-6" style={{ color: 'var(--ink-3)' }}>
-        Welcome, <strong>{invite.first_name}</strong>. Set a password to activate your instructor account
+        Welcome, <strong>{invite.first_name}</strong>. Set a password to activate your
+        {invite.role === 'instructor' ? ' instructor' : ' parent portal'} account
         for <strong>{invite.email}</strong>.
       </p>
       {submitError && (
