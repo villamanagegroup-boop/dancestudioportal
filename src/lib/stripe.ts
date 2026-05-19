@@ -1,8 +1,22 @@
 import Stripe from 'stripe'
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20' as any,
-  typescript: true,
+let _stripe: Stripe | null = null
+
+function getStripe(): Stripe {
+  if (_stripe) return _stripe
+  const key = process.env.STRIPE_SECRET_KEY
+  if (!key) throw new Error('STRIPE_SECRET_KEY is not set')
+  _stripe = new Stripe(key, {
+    apiVersion: '2024-06-20' as any,
+    typescript: true,
+  })
+  return _stripe
+}
+
+export const stripe = new Proxy({} as Stripe, {
+  get(_target, prop) {
+    return (getStripe() as any)[prop]
+  },
 })
 
 export async function createOrGetStripeCustomer(
@@ -10,9 +24,10 @@ export async function createOrGetStripeCustomer(
   name: string,
   guardianId: string
 ): Promise<string> {
-  const existing = await stripe.customers.list({ email, limit: 1 })
+  const s = getStripe()
+  const existing = await s.customers.list({ email, limit: 1 })
   if (existing.data.length > 0) return existing.data[0].id
-  const customer = await stripe.customers.create({
+  const customer = await s.customers.create({
     email,
     name,
     metadata: { guardian_id: guardianId },

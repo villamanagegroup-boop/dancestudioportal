@@ -2,6 +2,7 @@ import { getPortalViewer } from '@/lib/portal-viewer'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import KpiStrip from '@/components/admin/KpiStrip'
 import SectionHead from '@/components/admin/SectionHead'
+import PayInvoiceModal from '@/components/portal/PayInvoiceModal'
 
 const NO_ID = '00000000-0000-0000-0000-000000000000'
 
@@ -62,9 +63,11 @@ export default async function ParentBillingPage() {
                   </div>
                   <div className="tl-trail">
                     <span style={{ fontWeight: 700, color: 'var(--ink-1)' }}>{formatCurrency(Number(inv.amount))}</span>
-                    <button className="text-sm font-medium" style={{ color: 'var(--grad-1)' }}>
-                      Pay →
-                    </button>
+                    <PayInvoiceModal
+                      invoiceId={inv.id}
+                      amount={Number(inv.amount)}
+                      description={inv.description}
+                    />
                   </div>
                 </div>
               ))}

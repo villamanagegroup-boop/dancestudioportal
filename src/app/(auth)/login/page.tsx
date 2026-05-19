@@ -71,14 +71,8 @@ export default function LoginPage() {
           {loading ? 'Signing in...' : 'Sign In'}
         </button>
       </form>
-      <div className="mt-4 pt-4" style={{ borderTop: '1px solid var(--line)' }}>
-        <button
-          type="button"
-          onClick={() => router.push('/dashboard')}
-          className="btn btn-ghost w-full justify-center"
-        >
-          Continue as Admin (dev bypass)
-        </button>
+      <div className="mt-4 text-center">
+        <Link href="/forgot-password" className="text-sm link">Forgot your password?</Link>
       </div>
       <p className="mt-4 text-center text-sm" style={{ color: 'var(--ink-3)' }}>
         Don&apos;t have an account?{' '}

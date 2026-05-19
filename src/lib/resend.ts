@@ -1,6 +1,29 @@
 import { Resend } from 'resend'
 
-export const resend = new Resend(process.env.RESEND_API_KEY)
+let _resend: Resend | null = null
+
+function getResend(): Resend | null {
+  if (_resend) return _resend
+  const key = process.env.RESEND_API_KEY
+  if (!key) return null
+  _resend = new Resend(key)
+  return _resend
+}
+
+async function send(payload: { from: string; to: string; subject: string; html: string }) {
+  const client = getResend()
+  if (!client) {
+    console.warn('[resend] RESEND_API_KEY not set — skipping email', { to: payload.to, subject: payload.subject })
+    return
+  }
+  if (!payload.from) {
+    console.warn('[resend] RESEND_FROM_EMAIL not set — skipping email', { to: payload.to, subject: payload.subject })
+    return
+  }
+  await client.emails.send(payload)
+}
+
+const FROM = () => process.env.RESEND_FROM_EMAIL ?? ''
 
 export async function sendEnrollmentConfirmation({
   to, guardianName, studentName, className, startDate, tuition,
@@ -8,8 +31,8 @@ export async function sendEnrollmentConfirmation({
   to: string; guardianName: string; studentName: string
   className: string; startDate: string; tuition: number
 }) {
-  await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+  await send({
+    from: FROM(),
     to,
     subject: `Enrollment Confirmed — ${studentName} in ${className}`,
     html: `
@@ -30,8 +53,8 @@ export async function sendInvoiceReminder({
   to: string; guardianName: string; amount: number
   dueDate: string; invoiceId: string
 }) {
-  await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+  await send({
+    from: FROM(),
     to,
     subject: `Payment Due — Capital Core Dance Studio`,
     html: `
@@ -49,8 +72,8 @@ export async function sendClassAnnouncement({
 }: {
   to: string; subject: string; body: string; className: string
 }) {
-  await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+  await send({
+    from: FROM(),
     to,
     subject,
     html: `
@@ -67,8 +90,8 @@ export async function sendStudioAnnouncement({
 }: {
   to: string; subject: string; body: string
 }) {
-  await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+  await send({
+    from: FROM(),
     to,
     subject,
     html: `
@@ -84,8 +107,8 @@ export async function sendPaymentFailedEmail({
 }: {
   to: string; guardianName: string; amount: number
 }) {
-  await resend.emails.send({
-    from: process.env.RESEND_FROM_EMAIL!,
+  await send({
+    from: FROM(),
     to,
     subject: `Payment Failed — Capital Core Dance Studio`,
     html: `
