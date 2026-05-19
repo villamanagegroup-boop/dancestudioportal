@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Home, Calendar, CreditCard, FileText, Tent, Megaphone, LogOut } from 'lucide-react'
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAvailablePortals } from '@/lib/portal-access'
 import PortalSwitcher from '@/components/PortalSwitcher'
 import ViewAsBar from '@/components/portal/ViewAsBar'
 
@@ -32,6 +33,7 @@ export default async function ParentLayout({ children }: { children: React.React
   }
 
   const switcherRole = viewer.canPreview ? 'admin' : viewer.role ?? 'parent'
+  const available = await getAvailablePortals(viewer.realUserId, switcherRole)
 
   return (
     <div className="min-h-screen">
@@ -55,7 +57,7 @@ export default async function ParentLayout({ children }: { children: React.React
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <PortalSwitcher role={switcherRole} current="parent" />
+            <PortalSwitcher available={available} current="parent" />
             <Link href="/login" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
               <LogOut size={15} />
               <span className="hidden sm:inline">Sign out</span>

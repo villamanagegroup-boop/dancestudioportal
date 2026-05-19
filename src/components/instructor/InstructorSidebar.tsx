@@ -8,7 +8,7 @@ import {
   Menu, X, LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import PortalSwitcher from '@/components/PortalSwitcher'
+import PortalSwitcher, { type PortalKey } from '@/components/PortalSwitcher'
 
 const navItems = [
   { href: '/instructor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -27,7 +27,7 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + '/')
 }
 
-export default function InstructorSidebar({ role }: { role: string }) {
+export default function InstructorSidebar({ role, available = [] }: { role: string; available?: PortalKey[] }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -43,9 +43,11 @@ export default function InstructorSidebar({ role }: { role: string }) {
         </div>
       </div>
 
-      <div className="px-4 py-2.5" style={{ borderBottom: '1px solid var(--line)' }}>
-        <PortalSwitcher role={role} current="instructor" />
-      </div>
+      {available.length > 1 && (
+        <div className="px-4 py-2.5" style={{ borderBottom: '1px solid var(--line)' }}>
+          <PortalSwitcher available={available} current="instructor" />
+        </div>
+      )}
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto min-h-0">
         {navItems.map(item => {

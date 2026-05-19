@@ -1,5 +1,6 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getAvailablePortals } from '@/lib/portal-access'
 import ViewAsBar from '@/components/portal/ViewAsBar'
 import InstructorSidebar from '@/components/instructor/InstructorSidebar'
 
@@ -22,6 +23,7 @@ export default async function InstructorLayout({ children }: { children: React.R
 
   const switcherRole = viewer.canPreview ? 'admin' : viewer.role ?? 'instructor'
   const previewActive = viewer.canPreview
+  const available = await getAvailablePortals(viewer.realUserId, switcherRole)
 
   return (
     <div
@@ -34,7 +36,7 @@ export default async function InstructorLayout({ children }: { children: React.R
         </div>
       )}
       <div className="admin-header-bar" aria-hidden="true" />
-      <InstructorSidebar role={switcherRole} />
+      <InstructorSidebar role={switcherRole} available={available} />
       <div
         className="flex-1 flex flex-col overflow-hidden admin-content"
         style={{ paddingTop: 'var(--preview-h, 0px)' }}

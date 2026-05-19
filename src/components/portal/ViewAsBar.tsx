@@ -10,7 +10,7 @@ interface Person {
 }
 
 interface Props {
-  kind: 'g' | 'i'
+  kind: 'g' | 'i' | 'p'
   people: Person[]
   currentId: string | null
 }
@@ -33,7 +33,7 @@ export default function ViewAsBar({ kind, people, currentId }: Props) {
     }
   }
 
-  const noun = kind === 'g' ? 'family' : 'instructor'
+  const noun = kind === 'g' ? 'family' : kind === 'i' ? 'instructor' : 'partner'
 
   return (
     <div className="bg-amber-50 border-b border-amber-200">

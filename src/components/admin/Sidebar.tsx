@@ -11,7 +11,7 @@ import {
   Handshake, Activity, ShieldCheck,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import PortalSwitcher from '@/components/PortalSwitcher'
+import PortalSwitcher, { type PortalKey } from '@/components/PortalSwitcher'
 
 interface NavChild { href: string; icon: React.ElementType; label: string }
 interface NavItem {
@@ -88,7 +88,7 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + '/')
 }
 
-export default function Sidebar({ role }: { role: string }) {
+export default function Sidebar({ role, available = [] }: { role: string; available?: PortalKey[] }) {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
@@ -117,9 +117,9 @@ export default function Sidebar({ role }: { role: string }) {
           <p className="text-xs" style={{ color: 'var(--ink-3)' }}>Dance Studio</p>
         </div>
       </div>
-      {role === 'admin' && (
+      {available.length > 1 && (
         <div className="px-4 py-2.5" style={{ borderBottom: '1px solid var(--line)' }}>
-          <PortalSwitcher role={role} current="admin" />
+          <PortalSwitcher available={available} current="admin" />
         </div>
       )}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto min-h-0">

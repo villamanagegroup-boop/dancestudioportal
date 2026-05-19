@@ -1,5 +1,6 @@
 import Sidebar from '@/components/admin/Sidebar'
 import { createClient } from '@/lib/supabase/server'
+import { getAvailablePortals } from '@/lib/portal-access'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
@@ -9,12 +10,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
     role = profile?.role ?? 'admin'
   }
+  const available = await getAvailablePortals(user?.id ?? null, role)
 
   return (
     <div className="admin-shell flex h-screen">
-      {/* Header backdrop: full-width strip at the top that the sidebar overlaps */}
       <div className="admin-header-bar" aria-hidden="true" />
-      <Sidebar role={role} />
+      <Sidebar role={role} available={available} />
       <div className="flex-1 flex flex-col overflow-hidden admin-content">
         <main className="flex-1 overflow-y-auto">
           {children}

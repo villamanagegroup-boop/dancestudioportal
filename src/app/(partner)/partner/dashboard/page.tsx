@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 export const dynamic = 'force-dynamic'
@@ -21,16 +21,18 @@ function formatTime(t: string | null) {
 }
 
 export default async function PartnerDashboardPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  const viewer = await getPortalViewer('p')
+  if (!viewer.realUserId && !viewer.canPreview) redirect('/login')
 
   const admin = createAdminClient()
-  const { data: partner } = await admin
-    .from('partners')
-    .select('id, name, partner_type, contact_name, email, phone, website, rate_amount, rate_unit, active')
-    .eq('profile_id', user.id)
-    .maybeSingle()
+  const partnerId = viewer.effectiveId
+  const { data: partner } = partnerId
+    ? await admin
+        .from('partners')
+        .select('id, name, partner_type, contact_name, email, phone, website, rate_amount, rate_unit, active')
+        .eq('id', partnerId)
+        .maybeSingle()
+    : { data: null }
 
   if (!partner) {
     return (

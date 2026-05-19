@@ -7,7 +7,8 @@ const COOKIE = 'portal_view_as'
 
 // 'g' = parent portal (viewer id is a guardian profile id)
 // 'i' = instructor portal (viewer id is an instructor row id)
-type Kind = 'g' | 'i'
+// 'p' = partner portal (viewer id is a partner row id)
+type Kind = 'g' | 'i' | 'p'
 
 export interface PortalViewer {
   /** The real signed-in user id, or null on the dev bypass. */
@@ -53,17 +54,25 @@ export async function getPortalViewer(kind: Kind): Promise<PortalViewer> {
         const { data } = await admin
           .from('profiles').select('id').eq('role', 'parent').limit(1).maybeSingle()
         effectiveId = data?.id ?? null
-      } else {
+      } else if (kind === 'i') {
         const { data } = await admin
           .from('instructors').select('id').eq('active', true).order('last_name').limit(1).maybeSingle()
+        effectiveId = data?.id ?? null
+      } else {
+        const { data } = await admin
+          .from('partners').select('id').eq('active', true).order('name').limit(1).maybeSingle()
         effectiveId = data?.id ?? null
       }
     }
   } else {
-    // Real session. For instructors, resolve their instructor row.
+    // Real session. Resolve the appropriate scoped id for the user.
     if (kind === 'i' && user) {
       const { data } = await supabase
         .from('instructors').select('id').eq('profile_id', user.id).maybeSingle()
+      effectiveId = data?.id ?? null
+    } else if (kind === 'p' && user) {
+      const { data } = await supabase
+        .from('partners').select('id').eq('profile_id', user.id).maybeSingle()
       effectiveId = data?.id ?? null
     } else {
       effectiveId = user?.id ?? null

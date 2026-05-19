@@ -24,39 +24,48 @@ export async function proxy(request: NextRequest) {
   if (process.env.NODE_ENV === 'development') return supabaseResponse
 
   const { data: { user } } = await supabase.auth.getUser()
+  const path = request.nextUrl.pathname
 
   const adminPaths = ['/dashboard', '/students', '/classes', '/enrollments', '/billing', '/staff', '/communications']
-  const isAdminPath = adminPaths.some(p => request.nextUrl.pathname.startsWith(p))
+  const isAdminPath = adminPaths.some(p => path.startsWith(p))
+  const isInstructorPath = path.startsWith('/instructor')
+  const isPartnerPath = path.startsWith('/partner')
+  const isPortalPath = path.startsWith('/portal')
 
-  if (isAdminPath) {
+  if (isAdminPath || isInstructorPath || isPartnerPath || isPortalPath) {
     if (!user) return NextResponse.redirect(new URL('/login', request.url))
-    // Use service-role for the role lookup — RLS via the edge SSR client
-    // unreliably hides the row, even when the same query works in a page render.
+  }
+
+  // Role + entitlement lookups use service-role to dodge edge-runtime RLS quirks.
+  const needsCheck = isAdminPath || isInstructorPath || isPartnerPath
+  if (needsCheck && user) {
     const admin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
     const { data: profile } = await admin
       .from('profiles').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'admin') {
+    const role = profile?.role ?? null
+
+    // Admin role can access anything.
+    if (role === 'admin') return supabaseResponse
+
+    if (isAdminPath) {
       return NextResponse.redirect(new URL('/portal', request.url))
     }
-  }
 
-  if (request.nextUrl.pathname.startsWith('/portal')) {
-    if (!user) return NextResponse.redirect(new URL('/login', request.url))
-  }
+    if (isInstructorPath) {
+      if (role === 'instructor') return supabaseResponse
+      const { data: row } = await admin
+        .from('instructors').select('id').eq('profile_id', user.id).maybeSingle()
+      if (!row) return NextResponse.redirect(new URL('/portal', request.url))
+    }
 
-  if (request.nextUrl.pathname.startsWith('/partner')) {
-    if (!user) return NextResponse.redirect(new URL('/login', request.url))
-    const admin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-    const { data: profile } = await admin
-      .from('profiles').select('role').eq('id', user.id).single()
-    if (profile?.role !== 'partner' && profile?.role !== 'admin') {
-      return NextResponse.redirect(new URL('/portal', request.url))
+    if (isPartnerPath) {
+      if (role === 'partner') return supabaseResponse
+      const { data: row } = await admin
+        .from('partners').select('id').eq('profile_id', user.id).maybeSingle()
+      if (!row) return NextResponse.redirect(new URL('/portal', request.url))
     }
   }
 
@@ -68,6 +77,6 @@ export const config = {
     '/dashboard/:path*', '/students/:path*', '/classes/:path*',
     '/enrollments/:path*', '/billing/:path*', '/staff/:path*',
     '/communications/:path*', '/settings/:path*', '/portal/:path*',
-    '/partner/:path*',
+    '/instructor/:path*', '/partner/:path*',
   ],
 }

@@ -7,7 +7,7 @@ const COOKIE = 'portal_view_as'
 // Sets/clears which person an admin (or dev-bypass) is previewing a portal as.
 export async function POST(req: NextRequest) {
   const { kind, id } = await req.json()
-  if (kind !== 'g' && kind !== 'i') {
+  if (kind !== 'g' && kind !== 'i' && kind !== 'p') {
     return NextResponse.json({ error: 'Invalid kind' }, { status: 400 })
   }
 
