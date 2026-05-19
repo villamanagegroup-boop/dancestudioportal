@@ -52,6 +52,33 @@ export default function InviteAccountModal({ role, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState<{ emailed: boolean; acceptUrl: string; warning?: string } | null>(null)
+  const [existing, setExisting] = useState<{ profileId: string; name: string; currentRole: string; requestedRole: string } | null>(null)
+  const [granted, setGranted] = useState(false)
+
+  async function grantExistingRole() {
+    if (!existing) return
+    setSubmitting(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/accounts/${existing.profileId}/roles`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: existing.requestedRole, action: 'add' }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error ?? 'Failed to grant role')
+        setSubmitting(false)
+        return
+      }
+      setGranted(true)
+      router.refresh()
+    } catch (e: any) {
+      setError(e?.message ?? 'Network error')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -80,6 +107,16 @@ export default function InviteAccountModal({ role, onClose }: Props) {
       const data = await res.json()
       if (!res.ok) {
         setError(data.error ?? 'Failed to send invite')
+        setSubmitting(false)
+        return
+      }
+      if (data.existing) {
+        setExisting({
+          profileId: data.profileId,
+          name: data.name,
+          currentRole: data.currentRole,
+          requestedRole: data.requestedRole,
+        })
         setSubmitting(false)
         return
       }
@@ -113,7 +150,60 @@ export default function InviteAccountModal({ role, onClose }: Props) {
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{labels.title}</h2>
         <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>{labels.subtitle}</p>
 
-        {success ? (
+        {existing ? (
+          granted ? (
+            <div>
+              <p style={{ fontSize: 14, color: '#059669', marginBottom: 12 }}>
+                ✓ <strong>{role}</strong> role granted to <strong>{existing.name}</strong>. They can now access the {role} portal next time they sign in.
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  type="button" onClick={onClose}
+                  style={{
+                    padding: '8px 14px', fontSize: 14, fontWeight: 600,
+                    background: 'var(--grad-1, #4f46e5)', color: 'white',
+                    border: 'none', borderRadius: 6, cursor: 'pointer',
+                  }}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <p style={{ fontSize: 14, color: '#111', marginBottom: 8 }}>
+                <strong>{existing.name}</strong> already has an account ({existing.currentRole}).
+              </p>
+              <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>
+                Instead of sending a new invite, grant them the <strong>{existing.requestedRole}</strong> role. They'll see the {existing.requestedRole} portal as an option next time they sign in.
+              </p>
+              {error && (
+                <p style={{ fontSize: 13, color: '#dc2626', marginBottom: 12 }}>{error}</p>
+              )}
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button
+                  type="button" onClick={onClose} disabled={submitting}
+                  style={{
+                    padding: '8px 14px', fontSize: 14, fontWeight: 500,
+                    background: 'transparent', border: '1px solid #d1d5db', borderRadius: 6,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button" onClick={grantExistingRole} disabled={submitting}
+                  style={{
+                    padding: '8px 14px', fontSize: 14, fontWeight: 600,
+                    background: 'var(--grad-1, #4f46e5)', color: 'white',
+                    border: 'none', borderRadius: 6, cursor: submitting ? 'wait' : 'pointer',
+                  }}
+                >
+                  {submitting ? 'Granting…' : `Grant ${existing.requestedRole} role`}
+                </button>
+              </div>
+            </div>
+          )
+        ) : success ? (
           <div>
             {success.emailed ? (
               <p style={{ fontSize: 14, color: '#059669', marginBottom: 12 }}>

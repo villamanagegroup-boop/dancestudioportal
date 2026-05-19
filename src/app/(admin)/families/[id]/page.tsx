@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Header from '@/components/admin/Header'
 import FamilyTabs, { type FamilyProfile } from '@/components/admin/FamilyTabs'
 import FamilyStudentManager from '@/components/admin/FamilyStudentManager'
+import RolesPanel from '@/components/admin/RolesPanel'
 
 export default async function FamilyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -194,6 +195,8 @@ export default async function FamilyDetailPage({ params }: { params: Promise<{ i
             availableStudents={unlinkableStudents}
           />
         </div>
+
+        <RolesPanel profileId={id} />
       </div>
     </div>
   )

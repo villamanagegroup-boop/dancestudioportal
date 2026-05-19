@@ -35,11 +35,16 @@ export async function POST(request: NextRequest) {
   }
 
   const { data: existingUser } = await admin
-    .from('profiles').select('id, role').eq('email', email).maybeSingle()
+    .from('profiles').select('id, role, first_name, last_name, email').eq('email', email).maybeSingle()
   if (existingUser) {
     return NextResponse.json({
-      error: `Account already exists for ${email} (role: ${existingUser.role}).`,
-    }, { status: 409 })
+      existing: true,
+      profileId: existingUser.id,
+      currentRole: existingUser.role,
+      name: `${existingUser.first_name ?? ''} ${existingUser.last_name ?? ''}`.trim() || existingUser.email,
+      requestedRole: role,
+      message: `Account already exists for ${email} (currently ${existingUser.role}). You can grant the ${role} role instead of inviting.`,
+    }, { status: 200 })
   }
 
   const token = randomBytes(32).toString('hex')

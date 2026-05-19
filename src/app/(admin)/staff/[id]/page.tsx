@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Header from '@/components/admin/Header'
 import StaffEditButton from '@/components/admin/StaffEditButton'
 import StaffPermissionsPanel from '@/components/admin/StaffPermissionsPanel'
+import RolesPanel from '@/components/admin/RolesPanel'
 import { formatDate, formatTime } from '@/lib/utils'
 
 function bgCheckBadge(expires: string | null) {
@@ -118,6 +119,11 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
         </div>
 
             <StaffPermissionsPanel instructor={instructor} />
+            {instructor.profile_id && (
+              <div className="mt-6">
+                <RolesPanel profileId={instructor.profile_id} />
+              </div>
+            )}
           </div>
         </div>
       </div>
