@@ -2,11 +2,12 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
-import { ChevronUp, ChevronDown, Plus, Search, Pencil, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { ChevronUp, ChevronDown, Plus, Search, Pencil, ShieldAlert, ShieldCheck, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROLE_LABELS, isStaffRole } from '@/lib/permissions'
 import RowActions from '@/components/admin/RowActions'
 import StaffFormModal from '@/components/forms/StaffFormModal'
+import InviteInstructorModal from '@/components/forms/InviteInstructorModal'
 import KpiStrip from '@/components/admin/KpiStrip'
 
 interface Instructor {
@@ -61,6 +62,7 @@ export default function StaffGrid({ instructors }: { instructors: Instructor[] }
   const [query, setQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('active')
   const [showAdd, setShowAdd] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
   const [editing, setEditing] = useState<Instructor | null>(null)
 
   function toggleSort(col: SortKey) {
@@ -131,12 +133,20 @@ export default function StaffGrid({ instructors }: { instructors: Instructor[] }
           <SortBtn col="name" label="Name" activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
           <SortBtn col="email" label="Email" activeKey={sortKey} dir={sortDir} onToggle={toggleSort} />
         </div>
-        <button
-          onClick={() => setShowAdd(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 transition-colors ml-auto"
-        >
-          <Plus size={16} /> Add Instructor
-        </button>
+        <div className="flex gap-2 ml-auto">
+          <button
+            onClick={() => setShowInvite(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-studio-600 text-studio-700 text-sm font-medium hover:bg-studio-50 transition-colors"
+          >
+            <Mail size={16} /> Invite Instructor
+          </button>
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 transition-colors"
+          >
+            <Plus size={16} /> Add Instructor
+          </button>
+        </div>
       </div>
 
       {sorted.length === 0 ? (
@@ -217,6 +227,7 @@ export default function StaffGrid({ instructors }: { instructors: Instructor[] }
       )}
 
       {showAdd && <StaffFormModal onClose={() => setShowAdd(false)} />}
+      {showInvite && <InviteInstructorModal onClose={() => setShowInvite(false)} />}
       {editing && <StaffFormModal onClose={() => setEditing(null)} instructor={editing} />}
     </>
   )

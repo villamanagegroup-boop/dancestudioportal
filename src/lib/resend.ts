@@ -102,6 +102,29 @@ export async function sendStudioAnnouncement({
   })
 }
 
+export async function sendInstructorInvite({
+  to, firstName, inviterName, acceptUrl,
+}: {
+  to: string; firstName: string; inviterName: string; acceptUrl: string
+}) {
+  await send({
+    from: FROM(),
+    to,
+    subject: `You're invited to the Capital Core Dance Studio staff portal`,
+    html: `
+      <h2>You're invited, ${firstName}!</h2>
+      <p>${inviterName} has invited you to join the Capital Core Dance Studio staff portal as an instructor.</p>
+      <p>
+        <a href="${acceptUrl}" style="display:inline-block;background:#4f46e5;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:600;">
+          Accept invitation →
+        </a>
+      </p>
+      <p style="color:#666;font-size:13px;">This link expires in 7 days. If the button doesn't work, paste this into your browser: ${acceptUrl}</p>
+      <p>— Capital Core Dance Studio</p>
+    `,
+  })
+}
+
 export async function sendPaymentFailedEmail({
   to, guardianName, amount,
 }: {
