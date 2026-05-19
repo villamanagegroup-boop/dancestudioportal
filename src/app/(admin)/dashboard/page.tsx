@@ -136,11 +136,10 @@ export default async function DashboardPage() {
     <div className="flex flex-col h-full">
       <Header title="Dashboard" />
       <div className="flex-1 overflow-y-auto">
-        <div className="page-gutter min-h-full flex flex-col">
+        <div className="page-gutter min-h-full flex flex-col" style={{ paddingTop: 16 }}>
           {/* Personal greeting — sits on the gradient, above the card */}
-          <div className="mb-8">
-            <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>{timeGreeting}</p>
-            <h1 className="h1 mt-2" style={{ fontSize: 32, letterSpacing: '-0.02em' }}>
+          <div className="mb-4">
+            <h1 className="h1" style={{ fontSize: 32, letterSpacing: '-0.02em' }}>
               Hi, <span className="grad-text">{greetingName}</span>.
             </h1>
           </div>

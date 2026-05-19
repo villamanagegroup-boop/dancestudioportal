@@ -1,12 +1,18 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown } from 'lucide-react'
 import { cn, formatDate } from '@/lib/utils'
 import RowActions from '@/components/admin/RowActions'
 import StudioProfileForm from '@/components/admin/StudioProfileForm'
 import SettingsToggleGroup, { type ToggleSection } from '@/components/admin/SettingsToggleGroup'
 import TaxRatesManager from '@/components/admin/TaxRatesManager'
 import ChargeCategoriesManager from '@/components/admin/ChargeCategoriesManager'
+import AccountProfileForm from '@/components/admin/AccountProfileForm'
+import {
+  SeasonFormModal, RoomFormModal, ClassTypeFormModal,
+} from '@/components/forms/SettingsEntityModals'
+import { useRouter } from 'next/navigation'
 
 interface Season {
   id: string; name: string; start_date: string; end_date: string
@@ -18,7 +24,8 @@ interface Room {
 }
 interface ClassType {
   id: string; name: string; style: string; level: string
-  min_age: number | null; max_age: number | null; color: string; active: boolean
+  min_age: number | null; max_age: number | null
+  description: string | null; color: string; active: boolean
 }
 interface StudioHour {
   day_of_week: string; is_open: boolean; open_time: string; close_time: string
@@ -36,8 +43,12 @@ interface Props {
   chargeCategories: ChargeCategory[]
 }
 
-type Tab = 'Studio' | 'Parent Portal' | 'Staff Portal' | 'Finance' | 'Hours' | 'Seasons' | 'Rooms' | 'Class Types'
-const TABS: Tab[] = ['Studio', 'Parent Portal', 'Staff Portal', 'Finance', 'Hours', 'Seasons', 'Rooms', 'Class Types']
+type Tab = 'Account' | 'Studio' | 'Parent Portal' | 'Staff Portal' | 'Finance' | 'Hours' | 'Seasons' | 'Rooms' | 'Class Types'
+const TABS: Tab[] = ['Account', 'Studio', 'Parent Portal', 'Staff Portal', 'Finance', 'Hours', 'Seasons', 'Rooms', 'Class Types']
+type SortDir = 'asc' | 'desc'
+type SeasonSortKey = 'name' | 'start_date' | 'end_date' | 'active'
+type RoomSortKey = 'name' | 'capacity' | 'active'
+type ClassTypeSortKey = 'name' | 'style' | 'level' | 'active'
 
 const DAY_ORDER = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 const fieldClass = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-studio-500 focus:ring-1 focus:ring-studio-500'
@@ -157,7 +168,59 @@ const FINANCE_DEFAULTS: Record<string, boolean> = {
 }
 
 export default function SettingsPanel({ seasons, rooms, classTypes, studioHours, settings, taxRates, chargeCategories }: Props) {
-  const [activeTab, setActiveTab] = useState<Tab>('Studio')
+  const router = useRouter()
+  const [activeTab, setActiveTab] = useState<Tab>('Account')
+
+  // Modal state for the three managed entities
+  const [seasonModal, setSeasonModal] = useState<{ mode: 'create' | 'edit'; row?: Season } | null>(null)
+  const [roomModal, setRoomModal] = useState<{ mode: 'create' | 'edit'; row?: Room } | null>(null)
+  const [classTypeModal, setClassTypeModal] = useState<{ mode: 'create' | 'edit'; row?: ClassType } | null>(null)
+
+  // Sort state per entity
+  const [seasonSort, setSeasonSort] = useState<{ key: SeasonSortKey; dir: SortDir }>({ key: 'start_date', dir: 'desc' })
+  const [roomSort, setRoomSort] = useState<{ key: RoomSortKey; dir: SortDir }>({ key: 'name', dir: 'asc' })
+  const [classTypeSort, setClassTypeSort] = useState<{ key: ClassTypeSortKey; dir: SortDir }>({ key: 'name', dir: 'asc' })
+
+  function cmp(a: any, b: any, dir: SortDir) {
+    if (a == null && b == null) return 0
+    if (a == null) return 1
+    if (b == null) return -1
+    if (typeof a === 'number' && typeof b === 'number') return dir === 'asc' ? a - b : b - a
+    if (typeof a === 'boolean') return dir === 'asc' ? Number(b) - Number(a) : Number(a) - Number(b)
+    return dir === 'asc' ? String(a).localeCompare(String(b)) : String(b).localeCompare(String(a))
+  }
+
+  const sortedSeasons = useMemo(() => [...seasons].sort((a, b) => cmp((a as any)[seasonSort.key], (b as any)[seasonSort.key], seasonSort.dir)), [seasons, seasonSort])
+  const sortedRooms = useMemo(() => [...rooms].sort((a, b) => cmp((a as any)[roomSort.key], (b as any)[roomSort.key], roomSort.dir)), [rooms, roomSort])
+  const sortedClassTypes = useMemo(() => [...classTypes].sort((a, b) => cmp((a as any)[classTypeSort.key], (b as any)[classTypeSort.key], classTypeSort.dir)), [classTypes, classTypeSort])
+
+  function SortHeader<K extends string>({ col, label, sort, setSort }: {
+    col: K; label: string; sort: { key: K; dir: SortDir }; setSort: (s: { key: K; dir: SortDir }) => void
+  }) {
+    const active = sort.key === col
+    const Icon = active && sort.dir === 'desc' ? ChevronDown : ChevronUp
+    return (
+      <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">
+        <button type="button"
+          onClick={() => setSort({ key: col, dir: active && sort.dir === 'asc' ? 'desc' : 'asc' })}
+          className="inline-flex items-center gap-1 hover:text-gray-700">
+          {label}
+          <Icon size={12} className={active ? 'text-gray-700' : 'text-gray-300'} />
+        </button>
+      </th>
+    )
+  }
+
+  async function deleteEntity(endpoint: string, entityLabel: string) {
+    if (!confirm(`Delete this ${entityLabel}? This cannot be undone.`)) return
+    const res = await fetch(endpoint, { method: 'DELETE' })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      alert(`Delete failed: ${data.error ?? res.statusText}`)
+      return
+    }
+    router.refresh()
+  }
   const [hours, setHours] = useState<StudioHour[]>(() =>
     [...studioHours].sort((a, b) => DAY_ORDER.indexOf(a.day_of_week) - DAY_ORDER.indexOf(b.day_of_week)),
   )
@@ -208,6 +271,8 @@ export default function SettingsPanel({ seasons, rooms, classTypes, studioHours,
           </button>
         ))}
       </div>
+
+      {activeTab === 'Account' && <AccountProfileForm />}
 
       {activeTab === 'Studio' && <StudioProfileForm initial={settings.studio_profile ?? null} />}
 
@@ -303,26 +368,33 @@ export default function SettingsPanel({ seasons, rooms, classTypes, studioHours,
 
       {activeTab === 'Seasons' && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900">Seasons</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Registration and billing periods</p>
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-gray-900">Seasons</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Registration and billing periods</p>
+            </div>
+            <button onClick={() => setSeasonModal({ mode: 'create' })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700">
+              <Plus size={14} /> Add season
+            </button>
           </div>
-          {seasons.length === 0 ? (
+          {sortedSeasons.length === 0 ? (
             <div className="py-12 text-center text-gray-400 text-sm">No seasons configured</div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Start</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">End</th>
+                  <SortHeader col="name" label="Name" sort={seasonSort} setSort={setSeasonSort} />
+                  <SortHeader col="start_date" label="Start" sort={seasonSort} setSort={setSeasonSort} />
+                  <SortHeader col="end_date" label="End" sort={seasonSort} setSort={setSeasonSort} />
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Tuition Due</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                  <SortHeader col="active" label="Status" sort={seasonSort} setSort={setSeasonSort} />
+                  <th className="px-5 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {seasons.map(s => (
-                  <tr key={s.id} className="hover:bg-gray-50">
+                {sortedSeasons.map(s => (
+                  <tr key={s.id} className="group hover:bg-gray-50">
                     <td className="px-5 py-3 text-sm font-medium text-gray-900">{s.name}</td>
                     <td className="px-5 py-3 text-sm text-gray-600">{formatDate(s.start_date)}</td>
                     <td className="px-5 py-3 text-sm text-gray-600">{formatDate(s.end_date)}</td>
@@ -335,6 +407,18 @@ export default function SettingsPanel({ seasons, rooms, classTypes, studioHours,
                         {s.active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
+                    <td className="px-5 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setSeasonModal({ mode: 'edit', row: s })}
+                          className="p-1.5 rounded hover:bg-gray-100" title="Edit">
+                          <Pencil size={14} className="text-gray-500" />
+                        </button>
+                        <button onClick={() => deleteEntity(`/api/seasons/${s.id}`, 'season')}
+                          className="p-1.5 rounded hover:bg-red-50" title="Delete">
+                          <Trash2 size={14} className="text-red-500" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -345,26 +429,32 @@ export default function SettingsPanel({ seasons, rooms, classTypes, studioHours,
 
       {activeTab === 'Rooms' && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900">Rooms & Spaces</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Studio rooms available for scheduling</p>
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-gray-900">Rooms & Spaces</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Studio rooms available for scheduling</p>
+            </div>
+            <button onClick={() => setRoomModal({ mode: 'create' })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700">
+              <Plus size={14} /> Add room
+            </button>
           </div>
-          {rooms.length === 0 ? (
+          {sortedRooms.length === 0 ? (
             <div className="py-12 text-center text-gray-400 text-sm">No rooms configured</div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Room</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Capacity</th>
+                  <SortHeader col="name" label="Room" sort={roomSort} setSort={setRoomSort} />
+                  <SortHeader col="capacity" label="Capacity" sort={roomSort} setSort={setRoomSort} />
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Floor</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Features</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                  <th className="sticky right-0 bg-white border-l border-gray-100 px-5 py-3" />
+                  <SortHeader col="active" label="Status" sort={roomSort} setSort={setRoomSort} />
+                  <th className="px-5 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {rooms.map(r => (
+                {sortedRooms.map(r => (
                   <tr key={r.id} className="group hover:bg-gray-50">
                     <td className="px-5 py-3 text-sm font-medium text-gray-900">{r.name}</td>
                     <td className="px-5 py-3 text-sm text-gray-600">{r.capacity ?? '—'}</td>
@@ -383,14 +473,17 @@ export default function SettingsPanel({ seasons, rooms, classTypes, studioHours,
                         {r.active ? 'Active' : 'Inactive'}
                       </span>
                     </td>
-                    <td className="sticky right-0 bg-white group-hover:bg-gray-50 border-l border-gray-100 px-5 py-3 text-right transition-colors">
-                      <RowActions
-                        endpoint={`/api/rooms/${r.id}`}
-                        entityLabel="room"
-                        archived={!r.active}
-                        archivePatch={{ active: false }}
-                        restorePatch={{ active: true }}
-                      />
+                    <td className="px-5 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setRoomModal({ mode: 'edit', row: r })}
+                          className="p-1.5 rounded hover:bg-gray-100" title="Edit">
+                          <Pencil size={14} className="text-gray-500" />
+                        </button>
+                        <button onClick={() => deleteEntity(`/api/rooms/${r.id}`, 'room')}
+                          className="p-1.5 rounded hover:bg-red-50" title="Delete">
+                          <Trash2 size={14} className="text-red-500" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -402,26 +495,34 @@ export default function SettingsPanel({ seasons, rooms, classTypes, studioHours,
 
       {activeTab === 'Class Types' && (
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="font-semibold text-gray-900">Class Types</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Dance styles and class catalog</p>
+          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="font-semibold text-gray-900">Class Types</h2>
+              <p className="text-sm text-gray-500 mt-0.5">Dance styles and class catalog</p>
+            </div>
+            <button onClick={() => setClassTypeModal({ mode: 'create' })}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700">
+              <Plus size={14} /> Add class type
+            </button>
           </div>
-          {classTypes.length === 0 ? (
+          {sortedClassTypes.length === 0 ? (
             <div className="py-12 text-center text-gray-400 text-sm">No class types configured</div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Style</th>
-                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Level</th>
+                  <SortHeader col="name" label="Name" sort={classTypeSort} setSort={setClassTypeSort} />
+                  <SortHeader col="style" label="Style" sort={classTypeSort} setSort={setClassTypeSort} />
+                  <SortHeader col="level" label="Level" sort={classTypeSort} setSort={setClassTypeSort} />
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Age Range</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Color</th>
+                  <SortHeader col="active" label="Status" sort={classTypeSort} setSort={setClassTypeSort} />
+                  <th className="px-5 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {classTypes.map(ct => (
-                  <tr key={ct.id} className="hover:bg-gray-50">
+                {sortedClassTypes.map(ct => (
+                  <tr key={ct.id} className="group hover:bg-gray-50">
                     <td className="px-5 py-3 text-sm font-medium text-gray-900">{ct.name}</td>
                     <td className="px-5 py-3 text-sm text-gray-600">{ct.style}</td>
                     <td className="px-5 py-3 text-sm text-gray-600 capitalize">{ct.level.replace('_', ' ')}</td>
@@ -434,12 +535,42 @@ export default function SettingsPanel({ seasons, rooms, classTypes, studioHours,
                         <span className="text-xs text-gray-500 font-mono">{ct.color}</span>
                       </div>
                     </td>
+                    <td className="px-5 py-3">
+                      <span className={cn(
+                        'text-xs font-medium px-2 py-1 rounded-full',
+                        ct.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600',
+                      )}>
+                        {ct.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => setClassTypeModal({ mode: 'edit', row: ct })}
+                          className="p-1.5 rounded hover:bg-gray-100" title="Edit">
+                          <Pencil size={14} className="text-gray-500" />
+                        </button>
+                        <button onClick={() => deleteEntity(`/api/class-types/${ct.id}`, 'class type')}
+                          className="p-1.5 rounded hover:bg-red-50" title="Delete">
+                          <Trash2 size={14} className="text-red-500" />
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           )}
         </div>
+      )}
+
+      {seasonModal && (
+        <SeasonFormModal mode={seasonModal.mode} season={seasonModal.row} onClose={() => setSeasonModal(null)} />
+      )}
+      {roomModal && (
+        <RoomFormModal mode={roomModal.mode} room={roomModal.row} onClose={() => setRoomModal(null)} />
+      )}
+      {classTypeModal && (
+        <ClassTypeFormModal mode={classTypeModal.mode} classType={classTypeModal.row} onClose={() => setClassTypeModal(null)} />
       )}
     </div>
   )

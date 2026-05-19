@@ -19,13 +19,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const body = await req.json()
   const update: Record<string, unknown> = {}
   if ('name' in body) update.name = body.name
-  if ('capacity' in body) update.capacity = body.capacity
-  if ('floor_type' in body) update.floor_type = body.floor_type
-  if ('has_mirrors' in body) update.has_mirrors = body.has_mirrors
-  if ('has_barres' in body) update.has_barres = body.has_barres
+  if ('start_date' in body) update.start_date = body.start_date
+  if ('end_date' in body) update.end_date = body.end_date
+  if ('tuition_due_day' in body) update.tuition_due_day = body.tuition_due_day
   if ('active' in body) update.active = body.active
   if (Object.keys(update).length === 0) return NextResponse.json({ error: 'no fields' }, { status: 400 })
-  const { error } = await auth.admin.from('rooms').update(update).eq('id', id)
+  const { error } = await auth.admin.from('seasons').update(update).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ ok: true })
 }
@@ -34,7 +33,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const auth = await requireAdmin()
   if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status })
   const { id } = await params
-  const { error } = await auth.admin.from('rooms').delete().eq('id', id)
+  const { error } = await auth.admin.from('seasons').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
   return NextResponse.json({ ok: true })
 }
