@@ -17,19 +17,13 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     const supabase = createClient()
-    const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
+    const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
     if (authError) {
       setError(authError.message)
       setLoading(false)
       return
     }
-    const { data: profile } = await supabase
-      .from('profiles').select('role').eq('id', data.user.id).single()
-    if (profile?.role === 'admin' || profile?.role === 'instructor') {
-      router.push('/dashboard')
-    } else {
-      router.push('/portal')
-    }
+    window.location.href = '/post-login'
   }
 
   return (
