@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { X, ArrowRightLeft } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { ClassOption } from '@/components/forms/GroupEnrollModal'
+import Portal from '@/components/Portal'
 
 interface Props {
   onClose: () => void
@@ -46,6 +47,7 @@ export default function BulkTransferModal({ onClose, enrollmentIds, classes }: P
   }
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -95,5 +97,6 @@ export default function BulkTransferModal({ onClose, enrollmentIds, classes }: P
         </div>
       </div>
     </div>
+    </Portal>
   )
 }

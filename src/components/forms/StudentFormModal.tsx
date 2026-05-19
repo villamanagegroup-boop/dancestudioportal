@@ -6,6 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { X } from 'lucide-react'
 import { studentSchema, type StudentFormData } from '@/lib/validations/student'
 import { useRouter } from 'next/navigation'
+import Portal from '@/components/Portal'
 
 interface Family {
   id: string
@@ -53,6 +54,7 @@ export default function StudentFormModal({
   }
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -123,5 +125,6 @@ export default function StudentFormModal({
         </form>
       </div>
     </div>
+    </Portal>
   )
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Portal from '@/components/Portal'
 
 interface Props {
   onClose: () => void
@@ -62,6 +63,7 @@ export default function CampFormModal({ onClose, instructors, rooms, defaults }:
   const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-studio-500 focus:ring-1 focus:ring-studio-500'
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -142,5 +144,6 @@ export default function CampFormModal({ onClose, instructors, rooms, defaults }:
         </form>
       </div>
     </div>
+    </Portal>
   )
 }

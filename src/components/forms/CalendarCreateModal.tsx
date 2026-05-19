@@ -7,6 +7,7 @@ import CampFormModal from '@/components/forms/CampFormModal'
 import PartyFormModal from '@/components/forms/PartyFormModal'
 import BookingFormModal from '@/components/forms/BookingFormModal'
 import CalendarEventModal from '@/components/forms/CalendarEventModal'
+import Portal from '@/components/Portal'
 
 export interface SlotContext {
   date: string        // YYYY-MM-DD
@@ -92,6 +93,7 @@ export default function CalendarCreateModal({ onClose, context, instructors, roo
   }
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -121,5 +123,6 @@ export default function CalendarCreateModal({ onClose, context, instructors, roo
         </div>
       </div>
     </div>
+    </Portal>
   )
 }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Portal from '@/components/Portal'
 
 type Props = {
   invoiceId: string
@@ -64,6 +65,7 @@ export default function PayInvoiceModal({ invoiceId, amount, description }: Prop
       </button>
 
       {open && (
+        <Portal>
         <div
           role="dialog"
           aria-modal="true"
@@ -134,6 +136,7 @@ export default function PayInvoiceModal({ invoiceId, amount, description }: Prop
             </div>
           </div>
         </div>
+        </Portal>
       )}
     </>
   )

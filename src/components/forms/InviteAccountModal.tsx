@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Portal from '@/components/Portal'
 
 type Role = 'parent' | 'instructor' | 'partner'
 
@@ -130,6 +131,7 @@ export default function InviteAccountModal({ role, onClose }: Props) {
   }
 
   return (
+    <Portal>
     <div
       role="dialog"
       aria-modal="true"
@@ -349,5 +351,6 @@ export default function InviteAccountModal({ role, onClose }: Props) {
         )}
       </div>
     </div>
+    </Portal>
   )
 }

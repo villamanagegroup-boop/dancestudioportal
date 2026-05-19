@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Upload, Download, Trash2, FileText, Loader2, AlertCircle } from 'lucide-react'
+import Portal from '@/components/Portal'
 
 interface Doc {
   id: string
@@ -169,6 +170,7 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
   }
 
   return (
+    <Portal>
     <div role="dialog" aria-modal="true"
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50 }}
       onClick={() => !submitting && onClose()}>
@@ -215,5 +217,6 @@ function UploadModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: (
         </form>
       </div>
     </div>
+    </Portal>
   )
 }

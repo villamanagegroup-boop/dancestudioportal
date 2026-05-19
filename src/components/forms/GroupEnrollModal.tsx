@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X, Search, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Portal from '@/components/Portal'
 
 export interface ClassOption {
   id: string
@@ -93,6 +94,7 @@ export default function GroupEnrollModal({ onClose, students, classes, activeCou
   }
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div
         className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
@@ -252,5 +254,6 @@ export default function GroupEnrollModal({ onClose, students, classes, activeCou
         </form>
       </div>
     </div>
+    </Portal>
   )
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { X, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Portal from '@/components/Portal'
 
 interface CalendarEvent {
   id: string
@@ -106,6 +107,7 @@ export default function CalendarEventModal({ onClose, rooms, event, defaults }: 
   }
 
   return (
+    <Portal>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
@@ -199,5 +201,6 @@ export default function CalendarEventModal({ onClose, rooms, event, defaults }: 
         </form>
       </div>
     </div>
+    </Portal>
   )
 }
