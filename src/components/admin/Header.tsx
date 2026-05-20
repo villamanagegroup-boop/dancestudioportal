@@ -20,10 +20,10 @@ export default function Header({ title, subtitle }: HeaderProps) {
   }
 
   return (
-    <header className="h-16 bg-transparent flex items-center gap-4 px-6 flex-shrink-0 relative z-10">
+    <header className="h-16 bg-transparent flex items-center gap-4 px-6 flex-shrink-0 relative z-10 pl-16 md:pl-6">
       <div className="min-w-0 flex-shrink-0">
         <h1 className="text-lg font-semibold" style={{ color: 'var(--ink-1)' }}>{title}</h1>
-        {subtitle && <p className="text-sm" style={{ color: 'var(--ink-3)' }}>{subtitle}</p>}
+        {subtitle && <p className="text-sm hidden sm:block" style={{ color: 'var(--ink-3)' }}>{subtitle}</p>}
       </div>
 
       <div

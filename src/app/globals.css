@@ -1216,3 +1216,23 @@ main .rounded-2xl.bg-white {
   content:""; position: absolute; inset: 0;
   background: radial-gradient(circle at 30% 20%, rgba(255,255,255,.55), transparent 50%);
 }
+
+/* ───────── Mobile: horizontally scroll wide data tables ───────── */
+@media (max-width: 768px) {
+  /* Wrap any data table in a horizontal scroll region so it never
+     forces the viewport wider than the screen. The card wrappers often
+     use overflow-hidden which would otherwise clip; switch to auto. */
+  main table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* Cards that wrap tables: allow the inner scroll instead of clipping. */
+  main .overflow-hidden:has(> table),
+  main .overflow-hidden:has(table) {
+    overflow-x: auto;
+  }
+  /* Tighten oversized desktop padding on the smallest screens. */
+  .glass-page { padding: 18px 16px; }
+}
