@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import KpiStrip from '@/components/admin/KpiStrip'
@@ -43,6 +44,12 @@ export default async function ParentBillingPage() {
           { label: 'Lifetime paid', value: formatCurrency(paidTotal) },
         ]}
       />
+
+      <div className="mt-4">
+        <Link href="/portal/payment-methods" className="text-sm font-medium" style={{ color: 'var(--grad-1)' }}>
+          Manage payment methods →
+        </Link>
+      </div>
 
       {outstanding.length > 0 && (
         <>

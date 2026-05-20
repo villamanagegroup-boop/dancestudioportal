@@ -4,6 +4,7 @@ import Header from '@/components/admin/Header'
 import FamilyTabs, { type FamilyProfile } from '@/components/admin/FamilyTabs'
 import FamilyStudentManager from '@/components/admin/FamilyStudentManager'
 import RolesPanel from '@/components/admin/RolesPanel'
+import PaymentMethodsManager from '@/components/portal/PaymentMethodsManager'
 
 export default async function FamilyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -197,6 +198,8 @@ export default async function FamilyDetailPage({ params }: { params: Promise<{ i
         </div>
 
         <RolesPanel profileId={id} />
+
+        <PaymentMethodsManager guardianId={id} />
       </div>
     </div>
   )

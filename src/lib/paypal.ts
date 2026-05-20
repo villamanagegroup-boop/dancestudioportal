@@ -91,6 +91,42 @@ export async function captureOrder(orderId: string) {
 }
 
 /**
+ * Create a vault setup token (save a card without a purchase). The card
+ * details are collected client-side via card-fields tied to this token.
+ * Pass an existing customerId to group new cards under the same customer.
+ */
+export async function createSetupToken(customerId?: string | null): Promise<string> {
+  const token = await accessToken()
+  const body: any = { payment_source: { card: {} } }
+  if (customerId) body.customer = { id: customerId }
+  const res = await fetch(`${paypalBaseUrl()}/v3/vault/setup-tokens`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message ?? 'Failed to create setup token')
+  return data.id as string
+}
+
+/** Exchange an approved setup token for a permanent vault payment token. */
+export async function createPaymentTokenFromSetup(setupTokenId: string) {
+  const token = await accessToken()
+  const res = await fetch(`${paypalBaseUrl()}/v3/vault/payment-tokens`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ payment_source: { token: { id: setupTokenId, type: 'SETUP_TOKEN' } } }),
+  })
+  const data = await res.json()
+  if (!res.ok) throw new Error(data.message ?? 'Failed to vault card')
+  return data as {
+    id: string
+    customer?: { id?: string }
+    payment_source?: { card?: { last_digits?: string; brand?: string } }
+  }
+}
+
+/**
  * Verify a webhook event came from PayPal using their verify-signature API.
  * Requires PAYPAL_WEBHOOK_ID (the webhook's id from the PayPal dashboard).
  * `headers` are the incoming request headers; `rawBody` is the exact bytes.

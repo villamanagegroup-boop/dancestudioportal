@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard, Calendar, Users, Inbox, Settings,
-  Menu, X, LogOut,
+  Menu, X, LogOut, DollarSign,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import PortalSwitcher, { type PortalKey } from '@/components/PortalSwitcher'
@@ -14,6 +14,7 @@ const navItems = [
   { href: '/instructor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/instructor/my-classes', icon: Calendar, label: 'My Classes' },
   { href: '/instructor/students', icon: Users, label: 'Students' },
+  { href: '/instructor/billing', icon: DollarSign, label: 'Pay & Earnings' },
   { href: '/instructor/inbox', icon: Inbox, label: 'Inbox' },
   { href: '/instructor/settings', icon: Settings, label: 'Settings' },
 ]
