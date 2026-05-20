@@ -57,6 +57,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
             <nav className="hidden sm:flex items-center gap-3">
               <Link href="/partner/dashboard" className="text-sm text-gray-600 hover:text-gray-900">Dashboard</Link>
               <Link href="/partner/billing" className="text-sm text-gray-600 hover:text-gray-900">Billing</Link>
+              <Link href="/partner/account" className="text-sm text-gray-600 hover:text-gray-900">Account</Link>
             </nav>
             <PortalSwitcher available={available} current="partner" />
             <SignOutButton />

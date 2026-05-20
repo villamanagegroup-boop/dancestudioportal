@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Home, Calendar, CreditCard, FileText, Tent, Megaphone, LogOut } from 'lucide-react'
+import { Home, Calendar, CreditCard, FileText, Tent, Megaphone, LogOut, UserCircle } from 'lucide-react'
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAvailablePortals } from '@/lib/portal-access'
@@ -13,6 +13,7 @@ const navItems = [
   { href: '/portal/billing', icon: CreditCard, label: 'Billing' },
   { href: '/portal/documents', icon: FileText, label: 'Documents' },
   { href: '/portal/announcements', icon: Megaphone, label: 'News' },
+  { href: '/portal/account', icon: UserCircle, label: 'Account' },
 ]
 
 export default async function ParentLayout({ children }: { children: React.ReactNode }) {
