@@ -89,3 +89,33 @@ export async function captureOrder(orderId: string) {
   if (!res.ok) throw new Error(data.message ?? 'Failed to capture PayPal order')
   return data
 }
+
+/**
+ * Verify a webhook event came from PayPal using their verify-signature API.
+ * Requires PAYPAL_WEBHOOK_ID (the webhook's id from the PayPal dashboard).
+ * `headers` are the incoming request headers; `rawBody` is the exact bytes.
+ */
+export async function verifyWebhookSignature(
+  headers: Headers,
+  rawBody: string,
+): Promise<boolean> {
+  const webhookId = process.env.PAYPAL_WEBHOOK_ID
+  if (!webhookId) return false
+  const token = await accessToken()
+  const res = await fetch(`${paypalBaseUrl()}/v1/notifications/verify-webhook-signature`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      auth_algo: headers.get('paypal-auth-algo'),
+      cert_url: headers.get('paypal-cert-url'),
+      transmission_id: headers.get('paypal-transmission-id'),
+      transmission_sig: headers.get('paypal-transmission-sig'),
+      transmission_time: headers.get('paypal-transmission-time'),
+      webhook_id: webhookId,
+      webhook_event: JSON.parse(rawBody),
+    }),
+  })
+  if (!res.ok) return false
+  const data = await res.json()
+  return data.verification_status === 'SUCCESS'
+}
