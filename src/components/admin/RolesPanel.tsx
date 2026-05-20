@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Shield, GraduationCap, Handshake, Users, Check, Loader2 } from 'lucide-react'
 
-type Role = 'admin' | 'instructor' | 'partner'
+type Role = 'admin' | 'instructor' | 'partner' | 'parent'
 
 interface Entitlements {
   admin: boolean
@@ -29,11 +29,17 @@ const ROLE_META: Record<Role, { label: string; icon: React.ElementType; descript
     icon: Handshake,
     description: 'Business partner with access to the partner portal.',
   },
+  parent: {
+    label: 'Parent',
+    icon: Users,
+    description: 'Can enroll dancers, pay invoices, and access the parent portal.',
+  },
 }
 
 export default function RolesPanel({ profileId }: { profileId: string }) {
   const router = useRouter()
   const [entitlements, setEntitlements] = useState<Entitlements | null>(null)
+  const [parentPrimary, setParentPrimary] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState<Role | null>(null)
 
@@ -47,6 +53,7 @@ export default function RolesPanel({ profileId }: { profileId: string }) {
         return
       }
       setEntitlements(data.entitlements)
+      setParentPrimary(!!data.parentPrimary)
     } catch (e: any) {
       setError(e?.message ?? 'Network error')
     }
@@ -101,41 +108,38 @@ export default function RolesPanel({ profileId }: { profileId: string }) {
       )}
 
       <div className="divide-y divide-gray-50">
-        {entitlements && entitlements.parent && (
-          <div className="px-5 py-3 flex items-center gap-3">
-            <Users size={18} className="text-gray-400" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900">Parent</p>
-              <p className="text-xs text-gray-500">Has dancers linked or signed up as a parent. Always available.</p>
-            </div>
-            <Check size={16} className="text-green-600" />
-          </div>
-        )}
-
-        {(['admin', 'instructor', 'partner'] as Role[]).map(role => {
+        {(['admin', 'instructor', 'partner', 'parent'] as Role[]).map(role => {
           const meta = ROLE_META[role]
           const Icon = meta.icon
           const active = entitlements?.[role] ?? false
           const isBusy = busy === role
+          // Parent can't be toggled off when it's the account's primary role.
+          const locked = role === 'parent' && parentPrimary
           return (
             <div key={role} className="px-5 py-3 flex items-center gap-3">
               <Icon size={18} className={active ? 'text-studio-600' : 'text-gray-400'} />
               <div className="flex-1">
                 <p className="text-sm font-medium text-gray-900">{meta.label}</p>
-                <p className="text-xs text-gray-500">{meta.description}</p>
+                <p className="text-xs text-gray-500">
+                  {locked ? 'Primary role — always available.' : meta.description}
+                </p>
               </div>
-              <button
-                type="button"
-                onClick={() => toggle(role)}
-                disabled={isBusy || !entitlements}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                  active
-                    ? 'bg-studio-50 text-studio-700 border border-studio-200 hover:bg-studio-100'
-                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-                } disabled:opacity-50 disabled:cursor-wait`}
-              >
-                {isBusy ? <Loader2 size={14} className="animate-spin inline" /> : active ? 'Remove' : 'Add'}
-              </button>
+              {locked ? (
+                <Check size={16} className="text-green-600" />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => toggle(role)}
+                  disabled={isBusy || !entitlements}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                    active
+                      ? 'bg-studio-50 text-studio-700 border border-studio-200 hover:bg-studio-100'
+                      : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                  } disabled:opacity-50 disabled:cursor-wait`}
+                >
+                  {isBusy ? <Loader2 size={14} className="animate-spin inline" /> : active ? 'Remove' : 'Add'}
+                </button>
+              )}
             </div>
           )
         })}

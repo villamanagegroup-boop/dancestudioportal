@@ -10,17 +10,29 @@ import RolesPanel from '@/components/admin/RolesPanel'
  * admin can change/add roles for anyone from a list, without navigating
  * to a detail page.
  */
-export default function RolesPanelModal({ profileId, label = 'Manage roles' }: { profileId: string; label?: string }) {
+export default function RolesPanelModal({ profileId, label = 'Manage roles', compact = false }: { profileId: string; label?: string; compact?: boolean }) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
-      >
-        <Shield size={14} /> {label}
-      </button>
+      {compact ? (
+        <button
+          type="button"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen(true) }}
+          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+          aria-label="Manage roles"
+          title="Manage roles"
+        >
+          <Shield size={15} />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        >
+          <Shield size={14} /> {label}
+        </button>
+      )}
 
       {open && (
         <Portal>

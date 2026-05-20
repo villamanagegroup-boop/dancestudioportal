@@ -8,10 +8,12 @@ import { ROLE_LABELS, isStaffRole } from '@/lib/permissions'
 import RowActions from '@/components/admin/RowActions'
 import StaffFormModal from '@/components/forms/StaffFormModal'
 import InviteAccountModal from '@/components/forms/InviteAccountModal'
+import RolesPanelModal from '@/components/admin/RolesPanelModal'
 import KpiStrip from '@/components/admin/KpiStrip'
 
 interface Instructor {
   id: string
+  profile_id: string | null
   first_name: string
   last_name: string
   email: string
@@ -161,6 +163,9 @@ export default function StaffGrid({ instructors }: { instructors: Instructor[] }
             return (
               <div key={instructor.id} className="relative">
                 <div className="absolute top-3 right-3 z-10 flex items-center gap-1">
+                  {instructor.profile_id && (
+                    <RolesPanelModal profileId={instructor.profile_id} compact />
+                  )}
                   <button
                     onClick={() => setEditing(instructor)}
                     className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"

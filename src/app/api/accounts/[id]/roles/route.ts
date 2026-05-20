@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-const MANAGEABLE = new Set(['admin', 'instructor', 'partner'])
+const MANAGEABLE = new Set(['admin', 'instructor', 'partner', 'parent'])
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const { id } = await params
 
   const [{ data: profile }, { data: instructor }, { data: partner }, { data: hasStudents }] = await Promise.all([
-    auth.admin.from('profiles').select('id, role, first_name, last_name, email').eq('id', id).maybeSingle(),
+    auth.admin.from('profiles').select('id, role, first_name, last_name, email, extra_roles').eq('id', id).maybeSingle(),
     auth.admin.from('instructors').select('id, active').eq('profile_id', id).maybeSingle(),
     auth.admin.from('partners').select('id, active, name').eq('profile_id', id).maybeSingle(),
     auth.admin.from('guardian_students').select('id').eq('guardian_id', id).limit(1).maybeSingle(),
@@ -29,14 +29,17 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
+  const extra: string[] = (profile as any).extra_roles ?? []
+
   return NextResponse.json({
     profile,
     entitlements: {
       admin: profile.role === 'admin',
       instructor: !!(instructor && instructor.active),
       partner: !!(partner && partner.active),
-      parent: profile.role === 'parent' || !!hasStudents,
+      parent: profile.role === 'parent' || extra.includes('parent') || !!hasStudents,
     },
+    parentPrimary: profile.role === 'parent',
     linkedRows: {
       instructor: instructor ?? null,
       partner: partner ?? null,
@@ -60,8 +63,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   }
 
   const { data: profile } = await auth.admin
-    .from('profiles').select('id, first_name, last_name, email, role').eq('id', id).single()
+    .from('profiles').select('id, first_name, last_name, email, role, extra_roles').eq('id', id).single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+  if (role === 'parent') {
+    // If their primary role is already parent, nothing to do.
+    if (profile.role !== 'parent') {
+      const current: string[] = (profile as any).extra_roles ?? []
+      const next = action === 'add'
+        ? Array.from(new Set([...current, 'parent']))
+        : current.filter(r => r !== 'parent')
+      await auth.admin.from('profiles').update({ extra_roles: next }).eq('id', id)
+    }
+    return NextResponse.json({ ok: true })
+  }
 
   if (role === 'admin') {
     if (action === 'add') {

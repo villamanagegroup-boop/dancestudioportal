@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Search, Plus, ChevronRight, ChevronUp, ChevronDown, Users, Mail } from 'lucide-react'
 import FamilyFormModal from '@/components/forms/FamilyFormModal'
 import InviteAccountModal from '@/components/forms/InviteAccountModal'
+import RolesPanelModal from '@/components/admin/RolesPanelModal'
 import RowActions from '@/components/admin/RowActions'
 
 interface Family {
@@ -140,6 +141,7 @@ export default function FamiliesTable({ families }: { families: Family[] }) {
                     <td className="px-5 py-3 text-sm text-gray-600">{family.phone ?? '—'}</td>
                     <td className="sticky right-0 bg-white group-hover:bg-gray-50 border-l border-gray-100 px-5 py-3 text-right transition-colors">
                       <div className="flex items-center justify-end gap-1">
+                        <RolesPanelModal profileId={family.id} compact />
                         <RowActions
                           endpoint={`/api/families/${family.id}`}
                           entityLabel="family"

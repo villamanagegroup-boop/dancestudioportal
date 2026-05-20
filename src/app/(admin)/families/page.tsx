@@ -5,10 +5,12 @@ import FamiliesTable from '@/components/admin/FamiliesTable'
 export default async function FamiliesPage() {
   const supabase = createAdminClient()
 
+  // Primary parents plus anyone granted the soft 'parent' role (e.g. an
+  // admin who is also a parent).
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, email, phone, active, created_at, guardian_students(student_id)')
-    .eq('role', 'parent')
+    .select('id, first_name, last_name, email, phone, active, created_at, role, extra_roles, guardian_students(student_id)')
+    .or('role.eq.parent,extra_roles.cs.{parent}')
     .order('last_name')
 
   const families = (profiles ?? []).map(p => ({

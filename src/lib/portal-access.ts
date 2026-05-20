@@ -20,15 +20,17 @@ export async function getAvailablePortals(
   if (role === 'admin') return ['admin', 'instructor', 'parent', 'partner']
 
   const admin = createAdminClient()
-  const [{ data: instr }, { data: partn }, { data: guardian }] = await Promise.all([
+  const [{ data: instr }, { data: partn }, { data: guardian }, { data: prof }] = await Promise.all([
     admin.from('instructors').select('id').eq('profile_id', userId).maybeSingle(),
     admin.from('partners').select('id').eq('profile_id', userId).maybeSingle(),
     admin.from('guardian_students').select('id').eq('guardian_id', userId).limit(1).maybeSingle(),
+    admin.from('profiles').select('extra_roles').eq('id', userId).maybeSingle(),
   ])
+  const extra: string[] = (prof as any)?.extra_roles ?? []
 
   const result: PortalKey[] = []
   if (role === 'instructor' || instr) result.push('instructor')
-  if (role === 'parent' || guardian) result.push('parent')
+  if (role === 'parent' || guardian || extra.includes('parent')) result.push('parent')
   if (role === 'partner' || partn) result.push('partner')
 
   // Everyone with an account can see the parent portal (it's the public-facing
