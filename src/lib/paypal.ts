@@ -30,19 +30,49 @@ async function accessToken(): Promise<string> {
   return data.access_token
 }
 
-export async function createOrder(amount: number, description: string, invoiceId: string) {
+interface CreateOrderOpts {
+  amount: number
+  description: string
+  invoiceId: string
+  /** Save the card to the vault on successful capture. */
+  saveCard?: boolean
+  /** Existing PayPal customer id to group vaulted cards under. */
+  customerId?: string | null
+  /** Pay with a previously vaulted payment token instead of new card. */
+  savedTokenId?: string | null
+}
+
+export async function createOrder(opts: CreateOrderOpts) {
   const token = await accessToken()
+
+  const body: any = {
+    intent: 'CAPTURE',
+    purchase_units: [{
+      amount: { currency_code: 'USD', value: opts.amount.toFixed(2) },
+      description: opts.description.slice(0, 127),
+      custom_id: opts.invoiceId,
+    }],
+  }
+
+  if (opts.savedTokenId) {
+    // Charge an existing vaulted card.
+    body.payment_source = { token: { id: opts.savedTokenId, type: 'PAYMENT_METHOD_TOKEN' } }
+  } else if (opts.saveCard) {
+    // Collect a new card (via card-fields) and vault it on success.
+    body.payment_source = {
+      card: {
+        attributes: {
+          vault: { store_in_vault: 'ON_SUCCESS' },
+          ...(opts.customerId ? { customer: { id: opts.customerId } } : {}),
+        },
+      },
+    }
+  }
+
   const res = await fetch(`${paypalBaseUrl()}/v2/checkout/orders`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      intent: 'CAPTURE',
-      purchase_units: [{
-        amount: { currency_code: 'USD', value: amount.toFixed(2) },
-        description: description.slice(0, 127),
-        custom_id: invoiceId,
-      }],
-    }),
+    body: JSON.stringify(body),
   })
   const data = await res.json()
   if (!res.ok) throw new Error(data.message ?? 'Failed to create PayPal order')
