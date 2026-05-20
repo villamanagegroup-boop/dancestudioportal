@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { STAFF_ROLES, ROLE_LABELS, ROLE_DESCRIPTIONS, type StaffRole } from '@/lib/permissions'
-import Portal from '@/components/Portal'
+import SlideOver from '@/components/SlideOver'
 
 interface Props {
   onClose: () => void
@@ -75,14 +74,8 @@ export default function StaffFormModal({ onClose, instructor }: Props) {
   const inputCls = 'w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-studio-500 focus:ring-1 focus:ring-studio-500'
 
   return (
-    <Portal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{editing ? 'Edit Instructor' : 'Add Instructor'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
-        </div>
-        <form onSubmit={onSubmit} className="p-6 space-y-4 overflow-y-auto">
+    <SlideOver title={editing ? 'Edit Instructor' : 'Add Instructor'} onClose={onClose}>
+        <form onSubmit={onSubmit} className="p-6 space-y-4">
           {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
 
           <div className="grid grid-cols-2 gap-4">
@@ -164,8 +157,6 @@ export default function StaffFormModal({ onClose, instructor }: Props) {
             </button>
           </div>
         </form>
-      </div>
-    </div>
-    </Portal>
+    </SlideOver>
   )
 }

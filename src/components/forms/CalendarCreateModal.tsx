@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { X, GraduationCap, Tent, Sparkles, CalendarCheck, Users, Ban, Square, CalendarPlus } from 'lucide-react'
+import { GraduationCap, Tent, Sparkles, CalendarCheck, Users, Ban, Square, CalendarPlus } from 'lucide-react'
 import ClassFormModal from '@/components/forms/ClassFormModal'
 import CampFormModal from '@/components/forms/CampFormModal'
 import PartyFormModal from '@/components/forms/PartyFormModal'
 import BookingFormModal from '@/components/forms/BookingFormModal'
 import CalendarEventModal from '@/components/forms/CalendarEventModal'
-import Portal from '@/components/Portal'
+import SlideOver from '@/components/SlideOver'
 
 export interface SlotContext {
   date: string        // YYYY-MM-DD
@@ -93,19 +93,11 @@ export default function CalendarCreateModal({ onClose, context, instructors, roo
   }
 
   return (
-    <Portal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">Add to calendar</h2>
-            <p className="text-xs text-gray-500 mt-0.5">
-              {new Date(context.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
-              {' · '}{context.time}
-            </p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
-        </div>
+    <SlideOver title="Add to calendar" onClose={onClose}>
+        <p className="px-6 pt-4 text-xs text-gray-500">
+          {new Date(context.date + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+          {' · '}{context.time}
+        </p>
         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
           {OPTIONS.map(o => (
             <button
@@ -121,8 +113,6 @@ export default function CalendarCreateModal({ onClose, context, instructors, roo
             </button>
           ))}
         </div>
-      </div>
-    </div>
-    </Portal>
+    </SlideOver>
   )
 }

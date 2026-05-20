@@ -3,10 +3,9 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { X } from 'lucide-react'
 import { studentSchema, type StudentFormData } from '@/lib/validations/student'
 import { useRouter } from 'next/navigation'
-import Portal from '@/components/Portal'
+import SlideOver from '@/components/SlideOver'
 
 interface Family {
   id: string
@@ -54,15 +53,7 @@ export default function StudentFormModal({
   }
 
   return (
-    <Portal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{studentId ? 'Edit Student' : 'Add Student'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={20} />
-          </button>
-        </div>
+    <SlideOver title={studentId ? 'Edit Student' : 'Add Student'} onClose={onClose}>
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
           {error && (
             <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
@@ -123,8 +114,6 @@ export default function StudentFormModal({
             </button>
           </div>
         </form>
-      </div>
-    </div>
-    </Portal>
+    </SlideOver>
   )
 }

@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Trash2 } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import Portal from '@/components/Portal'
+import SlideOver from '@/components/SlideOver'
 
 interface CalendarEvent {
   id: string
@@ -107,13 +107,7 @@ export default function CalendarEventModal({ onClose, rooms, event, defaults }: 
   }
 
   return (
-    <Portal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">{editing ? 'Edit Calendar Item' : 'New Calendar Item'}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
-        </div>
+    <SlideOver title={editing ? 'Edit Calendar Item' : 'New Calendar Item'} onClose={onClose}>
         <form onSubmit={onSubmit} className="p-6 space-y-4">
           {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
 
@@ -199,8 +193,6 @@ export default function CalendarEventModal({ onClose, rooms, event, defaults }: 
             </button>
           </div>
         </form>
-      </div>
-    </div>
-    </Portal>
+    </SlideOver>
   )
 }

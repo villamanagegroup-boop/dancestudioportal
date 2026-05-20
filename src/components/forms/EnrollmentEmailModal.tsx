@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Mail, Megaphone, Send } from 'lucide-react'
+import { Mail, Megaphone, Send } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import Portal from '@/components/Portal'
+import SlideOver from '@/components/SlideOver'
 
 interface Props {
   onClose: () => void
@@ -56,20 +56,7 @@ export default function EnrollmentEmailModal({ onClose, enrollmentIds }: Props) 
   }
 
   return (
-    <Portal>
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" onClick={onClose}>
-      <div
-        className="bg-white rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto"
-        onClick={e => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-900">
-            Message {enrollmentIds.length} Enrollment{enrollmentIds.length === 1 ? '' : 's'}
-          </h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            <X size={20} />
-          </button>
-        </div>
+    <SlideOver title={`Message ${enrollmentIds.length} Enrollment${enrollmentIds.length === 1 ? '' : 's'}`} onClose={onClose}>
         <div className="p-6 space-y-4">
           <div className="flex gap-2">
             <button
@@ -145,8 +132,6 @@ export default function EnrollmentEmailModal({ onClose, enrollmentIds }: Props) 
             </button>
           </div>
         </div>
-      </div>
-    </div>
-    </Portal>
+    </SlideOver>
   )
 }

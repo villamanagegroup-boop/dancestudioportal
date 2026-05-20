@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import Portal from '@/components/Portal'
+import SlideOver from '@/components/SlideOver'
 
 type Role = 'parent' | 'instructor' | 'partner'
 
@@ -131,25 +131,8 @@ export default function InviteAccountModal({ role, onClose }: Props) {
   }
 
   return (
-    <Portal>
-    <div
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50,
-      }}
-      onClick={() => !submitting && onClose()}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{
-          background: 'white', borderRadius: 12, padding: 24,
-          maxWidth: 520, width: '90%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
-          maxHeight: '90vh', overflowY: 'auto',
-        }}
-      >
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 4 }}>{labels.title}</h2>
+    <SlideOver title={labels.title} onClose={() => !submitting && onClose()}>
+      <div style={{ padding: 24 }}>
         <p style={{ fontSize: 13, color: '#666', marginBottom: 16 }}>{labels.subtitle}</p>
 
         {existing ? (
@@ -350,7 +333,6 @@ export default function InviteAccountModal({ role, onClose }: Props) {
           </form>
         )}
       </div>
-    </div>
-    </Portal>
+    </SlideOver>
   )
 }
