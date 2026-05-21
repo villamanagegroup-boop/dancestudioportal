@@ -3,9 +3,11 @@ import Link from 'next/link'
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAvailablePortals } from '@/lib/portal-access'
+import { LayoutDashboard, CreditCard, UserCircle, LogOut } from 'lucide-react'
 import PortalSwitcher from '@/components/PortalSwitcher'
 import ViewAsBar from '@/components/portal/ViewAsBar'
 import SignOutButton from '@/components/portal/SignOutButton'
+import PortalMobileNav from '@/components/portal/PortalMobileNav'
 
 export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
   const viewer = await getPortalViewer('p')
@@ -60,7 +62,16 @@ export default async function PartnerLayout({ children }: { children: React.Reac
               <Link href="/partner/account" className="text-sm text-gray-600 hover:text-gray-900">Account</Link>
             </nav>
             <PortalSwitcher available={available} current="partner" />
-            <SignOutButton />
+            <div className="hidden sm:block"><SignOutButton /></div>
+            <PortalMobileNav
+              title="Partner portal"
+              items={[
+                { href: '/partner/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+                { href: '/partner/billing', icon: CreditCard, label: 'Billing' },
+                { href: '/partner/account', icon: UserCircle, label: 'Account' },
+                { href: '/login', icon: LogOut, label: 'Sign out' },
+              ]}
+            />
           </div>
         </div>
       </header>

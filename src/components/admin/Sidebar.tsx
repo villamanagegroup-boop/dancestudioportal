@@ -6,12 +6,13 @@ import { useState } from 'react'
 import {
   LayoutDashboard, Users, Calendar, CalendarDays, ClipboardList,
   CreditCard, UserCheck, MessageSquare, Settings,
-  Menu, X, Home, ChevronDown, ChevronRight,
+  Menu, X, Home, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
   Tent, Sparkles, CalendarCheck, BarChart2, GraduationCap,
   Handshake, Activity, ShieldCheck, FileText, Database,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import PortalSwitcher, { type PortalKey } from '@/components/PortalSwitcher'
+import { useSidebarCollapse } from '@/components/AdminShell'
 
 interface NavChild { href: string; icon: React.ElementType; label: string }
 interface NavItem {
@@ -90,8 +91,32 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + '/')
 }
 
+function CollapsedNav({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
+  return (
+    <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden min-h-0">
+      {navItems.map(({ href, icon: Icon, label, children }) => {
+        const active = isActive(pathname, href) || (children?.some(c => isActive(pathname, c.href)) ?? false)
+        return (
+          <Link
+            key={href}
+            href={href}
+            onClick={onNavigate}
+            title={label}
+            aria-label={label}
+            className="flex items-center justify-center w-11 h-11 mx-auto rounded-xl transition-all hover:bg-white/50"
+            style={active ? { ...activeStyle, color: '#fff' } : { color: 'var(--ink-2)' }}
+          >
+            <Icon size={19} />
+          </Link>
+        )
+      })}
+    </nav>
+  )
+}
+
 export default function Sidebar({ role, available = [] }: { role: string; available?: PortalKey[] }) {
   const pathname = usePathname()
+  const { collapsed, toggle } = useSidebarCollapse()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {}
@@ -228,20 +253,32 @@ export default function Sidebar({ role, available = [] }: { role: string; availa
         </div>
       </div>
 
-      {/* Tablet rail (md → <lg) — icon-only base, expands on hover */}
+      {/* Persistent sidebar (md+) — width follows the collapse toggle */}
       <aside
-        className="sidebar-rail hidden md:flex lg:hidden flex-col fixed inset-y-0 left-0 z-30 glass-strong"
+        className="app-sidebar hidden md:flex flex-col fixed inset-y-0 left-0 z-30 glass-strong"
         style={{ borderRadius: 0, borderRight: '1px solid var(--line)' }}
       >
-        {navContent}
-      </aside>
-
-      {/* Desktop full sidebar (lg+) */}
-      <aside
-        className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 z-30 glass-strong"
-        style={{ borderRadius: 0, borderRight: '1px solid var(--line)' }}
-      >
-        {navContent}
+        {collapsed ? (
+          <>
+            <div className="flex items-center justify-center py-5" style={{ borderBottom: '1px solid var(--line)' }}>
+              <div className="brand-mark flex-shrink-0">
+                <span className="text-white text-sm font-bold">CC</span>
+              </div>
+            </div>
+            <CollapsedNav pathname={pathname} />
+          </>
+        ) : (
+          navContent
+        )}
+        <button
+          onClick={toggle}
+          className="flex items-center gap-2 px-3 py-3 text-sm font-medium hover:bg-white/50 transition-colors"
+          style={{ borderTop: '1px solid var(--line)', color: 'var(--ink-3)', justifyContent: collapsed ? 'center' : 'flex-start' }}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronsRight size={18} /> : <><ChevronsLeft size={18} /> Collapse</>}
+        </button>
       </aside>
     </>
   )

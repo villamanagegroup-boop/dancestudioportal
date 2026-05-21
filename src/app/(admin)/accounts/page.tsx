@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import Header from '@/components/admin/Header'
 import AccountsDashboard from '@/components/admin/AccountsDashboard'
+import SubNavCards from '@/components/admin/SubNavCards'
+import { Home, GraduationCap, Handshake } from 'lucide-react'
 import { getAgeFromDob } from '@/lib/utils'
 
 export default async function AccountsPage() {
@@ -101,6 +103,11 @@ export default async function AccountsPage() {
                 Where your families and students stand right now.
               </p>
             </div>
+            <SubNavCards cards={[
+              { href: '/families', icon: Home, label: 'Families', desc: 'Parent & guardian accounts' },
+              { href: '/students', icon: GraduationCap, label: 'Students', desc: 'Dancer profiles' },
+              { href: '/partners', icon: Handshake, label: 'Partners', desc: 'Studios & organizations' },
+            ]} />
         <AccountsDashboard
           stats={stats}
           recentFamilies={recentFamilies}

@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation'
 import { useState } from 'react'
 import {
   LayoutDashboard, Calendar, Users, Inbox, Settings,
-  Menu, X, LogOut, DollarSign,
+  Menu, X, LogOut, DollarSign, ChevronsLeft, ChevronsRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import PortalSwitcher, { type PortalKey } from '@/components/PortalSwitcher'
+import { useSidebarCollapse } from '@/components/AdminShell'
 
 const navItems = [
   { href: '/instructor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -30,7 +31,28 @@ function isActive(pathname: string, href: string) {
 
 export default function InstructorSidebar({ role, available = [] }: { role: string; available?: PortalKey[] }) {
   const pathname = usePathname()
+  const { collapsed, toggle } = useSidebarCollapse()
   const [mobileOpen, setMobileOpen] = useState(false)
+
+  const collapsedNav = (
+    <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto overflow-x-hidden min-h-0">
+      {navItems.map(item => {
+        const active = isActive(pathname, item.href)
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            title={item.label}
+            aria-label={item.label}
+            className="flex items-center justify-center w-11 h-11 mx-auto rounded-xl transition-all hover:bg-white/50"
+            style={active ? { ...activeStyle, color: '#fff' } : { color: 'var(--ink-2)' }}
+          >
+            <item.icon size={19} />
+          </Link>
+        )
+      })}
+    </nav>
+  )
 
   const navContent = (
     <>
@@ -124,20 +146,32 @@ export default function InstructorSidebar({ role, available = [] }: { role: stri
         </div>
       </div>
 
-      {/* Tablet rail */}
+      {/* Persistent sidebar (md+) — width follows the collapse toggle */}
       <aside
-        className="sidebar-rail hidden md:flex lg:hidden flex-col fixed left-0 z-30 glass-strong"
+        className="app-sidebar hidden md:flex flex-col fixed left-0 z-30 glass-strong"
         style={{ top: 'var(--preview-h, 0px)', bottom: 0, borderRadius: 0, borderRight: '1px solid var(--line)' }}
       >
-        {navContent}
-      </aside>
-
-      {/* Desktop */}
-      <aside
-        className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed z-30 glass-strong"
-        style={{ top: 'var(--preview-h, 0px)', bottom: 0, left: 0, borderRadius: 0, borderRight: '1px solid var(--line)' }}
-      >
-        {navContent}
+        {collapsed ? (
+          <>
+            <div className="flex items-center justify-center py-5" style={{ borderBottom: '1px solid var(--line)' }}>
+              <div className="brand-mark flex-shrink-0">
+                <span className="text-white text-sm font-bold">CC</span>
+              </div>
+            </div>
+            {collapsedNav}
+          </>
+        ) : (
+          navContent
+        )}
+        <button
+          onClick={toggle}
+          className="flex items-center gap-2 px-3 py-3 text-sm font-medium hover:bg-white/50 transition-colors"
+          style={{ borderTop: '1px solid var(--line)', color: 'var(--ink-3)', justifyContent: collapsed ? 'center' : 'flex-start' }}
+          title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronsRight size={18} /> : <><ChevronsLeft size={18} /> Collapse</>}
+        </button>
       </aside>
     </>
   )

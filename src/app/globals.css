@@ -120,11 +120,17 @@ body {
 /* All app content sits above the stage */
 body > * { position: relative; z-index: 1; }
 
-/* Admin shell: drives the sidebar width var that header + main padding both read */
+/* Admin shell: drives the sidebar width var that header + main padding both read.
+   Width is user-controlled via the collapse toggle (data-collapsed) at md+. */
 .admin-shell { --sidebar-w: 0px; }
-@media (min-width: 768px)  { .admin-shell { --sidebar-w: 64px; } }
-@media (min-width: 1024px) { .admin-shell { --sidebar-w: 240px; } }
-.admin-shell .admin-content { padding-left: var(--sidebar-w); }
+@media (min-width: 768px) {
+  .admin-shell { --sidebar-w: 240px; }
+  .admin-shell[data-collapsed="true"] { --sidebar-w: 64px; }
+}
+.admin-shell .admin-content {
+  padding-left: var(--sidebar-w);
+  transition: padding-left .22s cubic-bezier(.2,.8,.25,1);
+}
 
 /* Header strip: paints across the entire top, behind the sidebar.
    Sidebar (z-30) overlaps it on the left; Header content (in-flow inside main)
@@ -143,63 +149,11 @@ body > * { position: relative; z-index: 1; }
   pointer-events: none;
 }
 
-/* ───────── Tablet sidebar rail (md → <lg) ─────────
-   64px icon-only column. On hover (or :focus-within for kbd), expands to 240px,
-   floating above content via the existing z-index, so layout doesn't shift. */
-@media (min-width: 768px) and (max-width: 1023.98px) {
-  .sidebar-rail {
-    width: 64px;
-    overflow: hidden;
-    transition: width .22s cubic-bezier(.2,.8,.25,1), box-shadow .22s ease;
-  }
-  .sidebar-rail:hover,
-  .sidebar-rail:focus-within {
-    width: 240px;
-    box-shadow: 24px 0 60px rgba(40,32,120,.18);
-  }
-  /* Hide all content labels by default; reveal only on expand */
-  .sidebar-rail .brand-name,
-  .sidebar-rail .nav-item span,
-  .sidebar-rail .nav-section,
-  .sidebar-rail .nav-badge,
-  .sidebar-rail nav button > svg + svg, /* ChevronDown next to label-only items */
-  .sidebar-rail .upgrade-card,
-  .sidebar-rail .px-3.pb-4.pt-2 {
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .15s ease;
-  }
-  .sidebar-rail:hover .brand-name,
-  .sidebar-rail:hover .nav-item span,
-  .sidebar-rail:hover .nav-section,
-  .sidebar-rail:hover .nav-badge,
-  .sidebar-rail:hover .upgrade-card,
-  .sidebar-rail:hover .px-3.pb-4.pt-2,
-  .sidebar-rail:focus-within .brand-name,
-  .sidebar-rail:focus-within .nav-item span,
-  .sidebar-rail:focus-within .nav-section,
-  .sidebar-rail:focus-within .nav-badge,
-  .sidebar-rail:focus-within .upgrade-card,
-  .sidebar-rail:focus-within .px-3.pb-4.pt-2 {
-    opacity: 1;
-    pointer-events: auto;
-    transition: opacity .2s ease .08s;
-  }
-  /* Center icons when collapsed */
-  .sidebar-rail .nav-item,
-  .sidebar-rail nav a {
-    padding-left: 0;
-    padding-right: 0;
-    justify-content: center;
-  }
-  .sidebar-rail:hover .nav-item,
-  .sidebar-rail:hover nav a,
-  .sidebar-rail:focus-within .nav-item,
-  .sidebar-rail:focus-within nav a {
-    padding-left: 12px;
-    padding-right: 12px;
-    justify-content: flex-start;
-  }
+/* Persistent sidebar (md+): width follows the collapse toggle. */
+.app-sidebar {
+  width: var(--sidebar-w);
+  overflow: hidden;
+  transition: width .22s cubic-bezier(.2,.8,.25,1);
 }
 
 /* Whole-page glass shell — used as the single translucent card that wraps a dashboard */

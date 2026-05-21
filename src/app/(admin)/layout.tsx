@@ -1,4 +1,5 @@
 import Sidebar from '@/components/admin/Sidebar'
+import AdminShell from '@/components/AdminShell'
 import { createClient } from '@/lib/supabase/server'
 import { getAvailablePortals } from '@/lib/portal-access'
 
@@ -13,7 +14,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const available = await getAvailablePortals(user?.id ?? null, role)
 
   return (
-    <div className="admin-shell flex h-screen">
+    <AdminShell>
       <div className="admin-header-bar" aria-hidden="true" />
       <Sidebar role={role} available={available} />
       <div className="flex-1 flex flex-col overflow-hidden admin-content">
@@ -21,6 +22,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {children}
         </main>
       </div>
-    </div>
+    </AdminShell>
   )
 }

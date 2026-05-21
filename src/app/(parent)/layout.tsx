@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getAvailablePortals } from '@/lib/portal-access'
 import PortalSwitcher from '@/components/PortalSwitcher'
 import ViewAsBar from '@/components/portal/ViewAsBar'
+import PortalMobileNav from '@/components/portal/PortalMobileNav'
 
 const navItems = [
   { href: '/portal', icon: Home, label: 'Home' },
@@ -59,22 +60,12 @@ export default async function ParentLayout({ children }: { children: React.React
           </nav>
           <div className="flex items-center gap-3">
             <PortalSwitcher available={available} current="parent" />
-            <Link href="/login" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+            <Link href="/login" className="hidden sm:flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
               <LogOut size={15} />
               <span className="hidden sm:inline">Sign out</span>
             </Link>
+            <PortalMobileNav items={[...navItems, { href: '/login', icon: LogOut, label: 'Sign out' }]} title="Capital Core" />
           </div>
-        </div>
-        {/* Mobile nav */}
-        <div className="sm:hidden border-t border-gray-100 px-4 overflow-x-auto">
-          <nav className="flex">
-            {navItems.map(({ href, icon: Icon, label }) => (
-              <Link key={href} href={href} className="flex-1 min-w-16 flex flex-col items-center gap-1 py-2 text-xs text-gray-500 hover:text-studio-600">
-                <Icon size={18} />
-                {label}
-              </Link>
-            ))}
-          </nav>
         </div>
       </header>
       <main className="max-w-5xl mx-auto px-4 py-6 sm:py-8 lg:py-12">

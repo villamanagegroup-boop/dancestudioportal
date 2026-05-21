@@ -37,7 +37,7 @@ export default function SlideOver({
 
   function handleClose() {
     setShown(false)
-    setTimeout(onClose, 220)
+    setTimeout(onClose, 340)
   }
 
   return (
@@ -48,7 +48,7 @@ export default function SlideOver({
           onClick={handleClose}
           style={{
             position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)',
-            opacity: shown ? 1 : 0, transition: 'opacity 200ms ease',
+            opacity: shown ? 1 : 0, transition: 'opacity 340ms ease',
           }}
         />
         {/* Panel */}
@@ -61,8 +61,9 @@ export default function SlideOver({
             width: '100%', maxWidth: width,
             background: 'white', boxShadow: '-12px 0 40px rgba(0,0,0,0.18)',
             display: 'flex', flexDirection: 'column',
-            transform: shown ? 'translateX(0)' : 'translateX(100%)',
-            transition: 'transform 220ms cubic-bezier(0.32, 0.72, 0, 1)',
+            transform: shown ? 'translate3d(0,0,0)' : 'translate3d(100%,0,0)',
+            transition: 'transform 360ms cubic-bezier(0.16, 1, 0.3, 1)',
+            willChange: 'transform',
           }}
         >
           <div style={{

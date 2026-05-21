@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getAvailablePortals } from '@/lib/portal-access'
 import ViewAsBar from '@/components/portal/ViewAsBar'
 import InstructorSidebar from '@/components/instructor/InstructorSidebar'
+import AdminShell from '@/components/AdminShell'
 
 export default async function InstructorLayout({ children }: { children: React.ReactNode }) {
   const viewer = await getPortalViewer('i')
@@ -26,10 +27,7 @@ export default async function InstructorLayout({ children }: { children: React.R
   const available = await getAvailablePortals(viewer.realUserId, switcherRole)
 
   return (
-    <div
-      className="admin-shell flex h-screen"
-      style={{ ['--preview-h' as any]: previewActive ? '36px' : '0px' }}
-    >
+    <AdminShell preview={previewActive}>
       {previewActive && (
         <div className="fixed top-0 left-0 right-0" style={{ zIndex: 60 }}>
           <ViewAsBar kind="i" people={people} currentId={viewer.effectiveId} />
@@ -45,6 +43,6 @@ export default async function InstructorLayout({ children }: { children: React.R
           {children}
         </main>
       </div>
-    </div>
+    </AdminShell>
   )
 }

@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import Header from '@/components/admin/Header'
 import ActivitiesDashboard from '@/components/admin/ActivitiesDashboard'
+import SubNavCards from '@/components/admin/SubNavCards'
+import { Calendar, Tent, ClipboardList } from 'lucide-react'
 
 export default async function ActivitiesPage() {
   const supabase = createAdminClient()
@@ -53,6 +55,11 @@ export default async function ActivitiesPage() {
                 Classes, camps, and enrollment activity at a glance.
               </p>
             </div>
+            <SubNavCards cards={[
+              { href: '/classes', icon: Calendar, label: 'Classes', desc: 'Weekly class schedule' },
+              { href: '/camps', icon: Tent, label: 'Camps', desc: 'Seasonal & break camps' },
+              { href: '/enrollments', icon: ClipboardList, label: 'Enrollments', desc: 'Registrations & waitlists' },
+            ]} />
             <ActivitiesDashboard
               stats={stats}
               recentEnrollments={(recentEnrollments ?? []) as any}

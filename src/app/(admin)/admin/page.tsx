@@ -1,6 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import Header from '@/components/admin/Header'
 import AdminDashboard from '@/components/admin/AdminDashboard'
+import SubNavCards from '@/components/admin/SubNavCards'
+import { CreditCard, BarChart2, UserCheck, FileText, Database } from 'lucide-react'
 
 export default async function AdminPage() {
   const supabase = createAdminClient()
@@ -50,6 +52,13 @@ export default async function AdminPage() {
                 Billing, reporting, and your team&apos;s status.
               </p>
             </div>
+            <SubNavCards cards={[
+              { href: '/billing', icon: CreditCard, label: 'Billing', desc: 'Invoices & payments' },
+              { href: '/reports', icon: BarChart2, label: 'Reports', desc: 'Revenue & insights' },
+              { href: '/staff', icon: UserCheck, label: 'Staff', desc: 'Team & instructors' },
+              { href: '/documents', icon: FileText, label: 'Documents', desc: 'Files & records' },
+              { href: '/import', icon: Database, label: 'Import data', desc: 'Bring in past data' },
+            ]} />
             <AdminDashboard stats={stats} />
           </div>
         </div>
