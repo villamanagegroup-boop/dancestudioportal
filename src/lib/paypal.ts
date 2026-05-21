@@ -9,11 +9,13 @@ export function paypalBaseUrl() {
 }
 
 export function paypalConfigured() {
-  return !!(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET)
+  return !!((process.env.PAYPAL_CLIENT_ID || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID) && process.env.PAYPAL_CLIENT_SECRET)
 }
 
 async function accessToken(): Promise<string> {
-  const id = process.env.PAYPAL_CLIENT_ID
+  // The Client ID is the same value whether exposed to the browser or not, so
+  // fall back to the public var when the server-only one isn't set.
+  const id = process.env.PAYPAL_CLIENT_ID || process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID
   const secret = process.env.PAYPAL_CLIENT_SECRET
   if (!id || !secret) throw new Error('PayPal not configured (missing PAYPAL_CLIENT_ID / PAYPAL_CLIENT_SECRET)')
   const auth = Buffer.from(`${id}:${secret}`).toString('base64')
