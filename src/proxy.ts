@@ -26,7 +26,7 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const path = request.nextUrl.pathname
 
-  const adminPaths = ['/dashboard', '/students', '/classes', '/enrollments', '/billing', '/staff', '/communications', '/documents', '/import']
+  const adminPaths = ['/dashboard', '/students', '/classes', '/enrollments', '/billing', '/checkout', '/staff', '/communications', '/documents', '/import']
   const isAdminPath = adminPaths.some(p => path.startsWith(p))
   const isInstructorPath = path.startsWith('/instructor')
   const isPartnerPath = path.startsWith('/partner')
@@ -75,7 +75,7 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*', '/students/:path*', '/classes/:path*',
-    '/enrollments/:path*', '/billing/:path*', '/staff/:path*',
+    '/enrollments/:path*', '/billing/:path*', '/checkout/:path*', '/staff/:path*',
     '/communications/:path*', '/settings/:path*', '/portal/:path*',
     '/instructor/:path*', '/partner/:path*',
     '/documents/:path*', '/import/:path*',

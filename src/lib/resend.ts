@@ -136,6 +136,43 @@ export async function sendAccountInvite({
   })
 }
 
+export async function sendTuitionPayLink({
+  to, guardianName, amount, items, payUrl, studioName, periodLabel,
+}: {
+  to: string; guardianName: string; amount: number
+  items: { label: string; amount: number }[]
+  payUrl: string; studioName: string; periodLabel: string
+}) {
+  const rows = items.map(it =>
+    `<tr><td style="padding:6px 0;color:#374151;">${it.label}</td>
+     <td style="padding:6px 0;text-align:right;color:#111;">$${Number(it.amount).toFixed(2)}</td></tr>`
+  ).join('')
+  await send({
+    from: FROM(),
+    to,
+    subject: `${periodLabel} tuition — ${studioName}`,
+    html: `
+      <div style="font-family:Arial,Helvetica,sans-serif;max-width:520px;margin:0 auto;">
+        <h2 style="color:#111;">${periodLabel} Tuition</h2>
+        <p>Hi ${guardianName},</p>
+        <p>Here is your tuition balance for ${periodLabel}. You can pay securely online using the button below.</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin:12px 0;">
+          ${rows}
+          <tr><td style="padding:10px 0 0;border-top:1px solid #e5e7eb;font-weight:700;color:#111;">Total due</td>
+              <td style="padding:10px 0 0;border-top:1px solid #e5e7eb;text-align:right;font-weight:700;color:#111;">$${amount.toFixed(2)}</td></tr>
+        </table>
+        <p style="margin:20px 0;">
+          <a href="${payUrl}" style="display:inline-block;background:#2dd4bf;color:#fff;padding:12px 22px;border-radius:8px;text-decoration:none;font-weight:700;">
+            Pay $${amount.toFixed(2)} →
+          </a>
+        </p>
+        <p style="color:#666;font-size:12px;">If the button doesn't work, paste this link into your browser:<br>${payUrl}</p>
+        <p>Thank you,<br>${studioName}</p>
+      </div>
+    `,
+  })
+}
+
 export async function sendPaymentFailedEmail({
   to, guardianName, amount,
 }: {

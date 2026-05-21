@@ -163,8 +163,10 @@ async function importStudents(admin: Admin, rows: ImportRow[], errs: RowError[])
   let count = 0
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i]
+    // DOB is optional. Only reject if a value was given but couldn't be parsed.
+    const rawDob = r.date_of_birth?.trim()
     const dob = parseDate(r.date_of_birth)
-    if (!dob) { errs.push({ row: i + 2, reason: 'Invalid date_of_birth' }); continue }
+    if (rawDob && !dob) { errs.push({ row: i + 2, reason: `Invalid date_of_birth: "${rawDob}"` }); continue }
     const { data: created, error } = await admin.from('students').insert({
       first_name: r.first_name, last_name: r.last_name, date_of_birth: dob,
       gender: r.gender ?? null,
