@@ -8,6 +8,7 @@ import PortalSwitcher from '@/components/PortalSwitcher'
 import ViewAsBar from '@/components/portal/ViewAsBar'
 import SignOutButton from '@/components/portal/SignOutButton'
 import PortalMobileNav from '@/components/portal/PortalMobileNav'
+import Logo from '@/components/Logo'
 
 export default async function PartnerLayout({ children }: { children: React.ReactNode }) {
   const viewer = await getPortalViewer('p')
@@ -46,13 +47,16 @@ export default async function PartnerLayout({ children }: { children: React.Reac
       <header style={{ borderBottom: '1px solid #e5e7eb', background: 'white' }}>
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <Link href="/partner/dashboard" className="block">
-              <p style={{ fontSize: 11, fontWeight: 600, color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                Partner portal
-              </p>
-              <p style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>
-                {partner?.name ?? 'Capital Core Dance Studio'}
-              </p>
+            <Link href="/partner/dashboard" className="flex items-center gap-3">
+              <Logo size={40} />
+              <span className="min-w-0">
+                <p style={{ fontSize: 11, fontWeight: 600, color: '#666', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  Partner portal
+                </p>
+                <p style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>
+                  {partner?.name ?? 'Capital Core Dance Studio'}
+                </p>
+              </span>
             </Link>
           </div>
           <div className="flex items-center gap-4">

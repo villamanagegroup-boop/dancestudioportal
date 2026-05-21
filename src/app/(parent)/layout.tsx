@@ -6,6 +6,7 @@ import { getAvailablePortals } from '@/lib/portal-access'
 import PortalSwitcher from '@/components/PortalSwitcher'
 import ViewAsBar from '@/components/portal/ViewAsBar'
 import PortalMobileNav from '@/components/portal/PortalMobileNav'
+import Logo from '@/components/Logo'
 
 const navItems = [
   { href: '/portal', icon: Home, label: 'Home' },
@@ -45,9 +46,7 @@ export default async function ParentLayout({ children }: { children: React.React
       <header className="glass sticky top-0 z-10 rounded-none border-x-0 border-t-0">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-studio-600 flex items-center justify-center">
-              <span className="text-white text-xs font-bold">CC</span>
-            </div>
+            <Logo size={28} rounded={8} />
             <span className="font-semibold text-gray-900 text-sm">Capital Core</span>
           </div>
           <nav className="hidden sm:flex items-center gap-1">

@@ -33,14 +33,9 @@ export default async function PayPage({ params }: { params: Promise<{ slug: stri
       <div style={{ width: '100%', maxWidth: 480 }}>
         {/* Branded header */}
         <div style={{ textAlign: 'center', marginBottom: 18 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-            width: 52, height: 52, borderRadius: 16, marginBottom: 10,
-            background: 'linear-gradient(135deg, var(--grad-1), var(--grad-2))',
-            boxShadow: 'var(--shadow-glow)', color: '#fff', fontWeight: 800, fontSize: 18,
-          }}>
-            {initials(studioName)}
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo.png" alt={studioName} width={72} height={72}
+            style={{ width: 72, height: 72, objectFit: 'contain', margin: '0 auto 10px', display: 'block' }} />
           <p style={{ fontWeight: 700, color: 'var(--ink-1)' }}>{studioName}</p>
           <p style={{ fontSize: 12, color: 'var(--ink-3)' }}>Secure checkout</p>
         </div>
@@ -82,8 +77,4 @@ export default async function PayPage({ params }: { params: Promise<{ slug: stri
       </div>
     </div>
   )
-}
-
-function initials(name: string) {
-  return name.split(/\s+/).slice(0, 2).map(w => w[0]?.toUpperCase() ?? '').join('') || 'CC'
 }

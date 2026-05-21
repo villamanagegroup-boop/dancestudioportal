@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Logo from '@/components/Logo'
 
 export default function AcceptInvitePage() {
   return (
@@ -140,9 +141,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div className="brand-mark mx-auto" style={{ width: 64, height: 64, borderRadius: 18 }}>
-            <span className="text-white text-2xl font-bold">CC</span>
-          </div>
+          <Logo size={64} rounded={18} className="mx-auto" />
           <h1 className="h1 mt-4 grad-text">Capital Core Dance Studio</h1>
         </div>
         <div className="glass-strong p-8">{children}</div>

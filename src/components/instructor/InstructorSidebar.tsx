@@ -10,6 +10,7 @@ import {
 import { cn } from '@/lib/utils'
 import PortalSwitcher, { type PortalKey } from '@/components/PortalSwitcher'
 import { useSidebarCollapse } from '@/components/AdminShell'
+import Logo from '@/components/Logo'
 
 const navItems = [
   { href: '/instructor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -57,9 +58,7 @@ export default function InstructorSidebar({ role, available = [] }: { role: stri
   const navContent = (
     <>
       <div className="flex items-center gap-3 px-4 py-5" style={{ borderBottom: '1px solid var(--line)' }}>
-        <div className="brand-mark flex-shrink-0">
-          <span className="text-white text-sm font-bold">CC</span>
-        </div>
+        <Logo size={40} />
         <div className="min-w-0">
           <p className="font-semibold text-sm leading-tight" style={{ color: 'var(--ink-1)' }}>Capital Core</p>
           <p className="text-xs" style={{ color: 'var(--ink-3)' }}>Instructor Portal</p>
@@ -154,9 +153,7 @@ export default function InstructorSidebar({ role, available = [] }: { role: stri
         {collapsed ? (
           <>
             <div className="flex items-center justify-center py-5" style={{ borderBottom: '1px solid var(--line)' }}>
-              <div className="brand-mark flex-shrink-0">
-                <span className="text-white text-sm font-bold">CC</span>
-              </div>
+              <Logo size={36} />
             </div>
             {collapsedNav}
           </>

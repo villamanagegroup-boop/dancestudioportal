@@ -10,6 +10,12 @@ function getResend(): Resend | null {
   return _resend
 }
 
+function logoHeader() {
+  const app = (process.env.NEXT_PUBLIC_APP_URL || '').replace(/\/+$/, '').replace(/^http:/, 'https:')
+  if (!app) return ''
+  return `<div style="text-align:center;padding:8px 0 4px;"><img src="${app}/logo.png" alt="Capital Core Dance Studio" width="72" height="72" style="width:72px;height:72px;object-fit:contain;" /></div>`
+}
+
 async function send(payload: { from: string; to: string; subject: string; html: string }) {
   const client = getResend()
   if (!client) {
@@ -20,7 +26,8 @@ async function send(payload: { from: string; to: string; subject: string; html: 
     console.warn('[resend] RESEND_FROM_EMAIL not set — skipping email', { to: payload.to, subject: payload.subject })
     return
   }
-  await client.emails.send(payload)
+  // Brand every outgoing email with the studio logo.
+  await client.emails.send({ ...payload, html: `${logoHeader()}${payload.html}` })
 }
 
 const FROM = () => process.env.RESEND_FROM_EMAIL ?? ''

@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils'
 import PortalSwitcher, { type PortalKey } from '@/components/PortalSwitcher'
 import { useSidebarCollapse } from '@/components/AdminShell'
+import Logo from '@/components/Logo'
 
 interface NavChild { href: string; icon: React.ElementType; label: string }
 interface NavItem {
@@ -137,9 +138,7 @@ export default function Sidebar({ role, available = [] }: { role: string; availa
   const navContent = (
     <>
       <div className="flex items-center gap-3 px-4 py-5" style={{ borderBottom: '1px solid var(--line)' }}>
-        <div className="brand-mark flex-shrink-0">
-          <span className="text-white text-sm font-bold">CC</span>
-        </div>
+        <Logo size={40} />
         <div className="min-w-0">
           <p className="font-semibold text-sm leading-tight" style={{ color: 'var(--ink-1)' }}>Capital Core</p>
           <p className="text-xs" style={{ color: 'var(--ink-3)' }}>Dance Studio</p>
@@ -262,9 +261,7 @@ export default function Sidebar({ role, available = [] }: { role: string; availa
         {collapsed ? (
           <>
             <div className="flex items-center justify-center py-5" style={{ borderBottom: '1px solid var(--line)' }}>
-              <div className="brand-mark flex-shrink-0">
-                <span className="text-white text-sm font-bold">CC</span>
-              </div>
+              <Logo size={36} />
             </div>
             <CollapsedNav pathname={pathname} />
           </>
