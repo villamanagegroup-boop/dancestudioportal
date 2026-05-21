@@ -7,8 +7,9 @@ import Portal from '@/components/Portal'
 /**
  * Right-side slide-over drawer. Renders into document.body (via Portal) so
  * it sits on top of everything regardless of ancestor stacking contexts.
- * Slides in from the right with a dimmed backdrop; clicking the backdrop
- * or the X closes it (with a slide-out animation).
+ * Uses inline-style transitions (not Tailwind utilities) so the slide
+ * animation always plays, and a requestAnimationFrame to guarantee the
+ * browser paints the closed state before transitioning to open.
  */
 export default function SlideOver({
   title,
@@ -22,40 +23,59 @@ export default function SlideOver({
   width?: number
 }) {
   const [shown, setShown] = useState(false)
+
   useEffect(() => {
-    setShown(true)
+    const id = requestAnimationFrame(() => setShown(true))
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') handleClose() }
     document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
+    return () => {
+      cancelAnimationFrame(id)
+      document.removeEventListener('keydown', onKey)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function handleClose() {
     setShown(false)
-    setTimeout(onClose, 200)
+    setTimeout(onClose, 220)
   }
 
   return (
     <Portal>
-      <div className="fixed inset-0 z-[100]">
+      <div style={{ position: 'fixed', inset: 0, zIndex: 100 }}>
+        {/* Backdrop */}
         <div
-          className={`absolute inset-0 bg-black/40 transition-opacity duration-200 ${shown ? 'opacity-100' : 'opacity-0'}`}
           onClick={handleClose}
+          style={{
+            position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)',
+            opacity: shown ? 1 : 0, transition: 'opacity 200ms ease',
+          }}
         />
+        {/* Panel */}
         <div
           role="dialog"
           aria-modal="true"
-          className={`absolute top-0 right-0 h-full bg-white shadow-2xl flex flex-col transition-transform duration-200 ease-out ${shown ? 'translate-x-0' : 'translate-x-full'}`}
-          style={{ width: '100%', maxWidth: width }}
           onClick={e => e.stopPropagation()}
+          style={{
+            position: 'absolute', top: 0, right: 0, height: '100%',
+            width: '100%', maxWidth: width,
+            background: 'white', boxShadow: '-12px 0 40px rgba(0,0,0,0.18)',
+            display: 'flex', flexDirection: 'column',
+            transform: shown ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 220ms cubic-bezier(0.32, 0.72, 0, 1)',
+          }}
         >
-          <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 flex-shrink-0">
-            <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
-            <button onClick={handleClose} className="text-gray-400 hover:text-gray-600" aria-label="Close">
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '16px 24px', borderBottom: '1px solid #f1f1f4', flexShrink: 0,
+          }}>
+            <h2 style={{ fontSize: 18, fontWeight: 600, color: '#111' }}>{title}</h2>
+            <button onClick={handleClose} aria-label="Close"
+              style={{ color: '#9ca3af', background: 'transparent', border: 'none', cursor: 'pointer', padding: 4 }}>
               <X size={20} />
             </button>
           </div>
-          <div className="flex-1 overflow-y-auto">{children}</div>
+          <div style={{ flex: 1, overflowY: 'auto' }}>{children}</div>
         </div>
       </div>
     </Portal>
