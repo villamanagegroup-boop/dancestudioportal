@@ -21,6 +21,9 @@ export type CheckoutLink = {
   thank_you_message: string | null
   active: boolean
   created_at: string
+  recipient_email?: string | null
+  recipient_name?: string | null
+  email_sent_at?: string | null
 }
 
 export type CheckoutPaymentRow = {
@@ -31,6 +34,9 @@ export type CheckoutPaymentRow = {
   created_at: string
   paypal_capture_id: string | null
 }
+
+export type PaidInfo = { total: number; count: number; latest: string }
+export type PaidByLink = Record<string, PaidInfo>
 
 export type CheckoutContactRow = {
   id: string
@@ -50,9 +56,10 @@ const tabs: { key: Tab; label: string }[] = [
   { key: 'contacts', label: 'Contacts' },
 ]
 
-export default function CheckoutManager({ links, payments, contacts, studioName }: {
+export default function CheckoutManager({ links, payments, paidByLink, contacts, studioName }: {
   links: CheckoutLink[]
   payments: CheckoutPaymentRow[]
+  paidByLink: PaidByLink
   contacts: CheckoutContactRow[]
   studioName: string
 }) {
@@ -73,7 +80,7 @@ export default function CheckoutManager({ links, payments, contacts, studioName 
       </div>
 
       {tab === 'take' && <TakePayment studioName={studioName} />}
-      {tab === 'links' && <LinksPanel links={links} />}
+      {tab === 'links' && <LinksPanel links={links} paidByLink={paidByLink} />}
       {tab === 'payments' && <PaymentsTable payments={payments} />}
       {tab === 'contacts' && <ContactsTable contacts={contacts} />}
     </div>
@@ -203,9 +210,24 @@ function LineItemsEditor({ items, setItems }: { items: CheckoutLineItem[]; setIt
 
 /* ---------------- Payment links ---------------- */
 
-function LinksPanel({ links: initial }: { links: CheckoutLink[] }) {
+function LinksPanel({ links: initial, paidByLink }: { links: CheckoutLink[]; paidByLink: PaidByLink }) {
   const router = useRouter()
   const [links, setLinks] = useState(initial)
+  const [showOnly, setShowOnly] = useState<'all' | 'unpaid' | 'paid'>('all')
+
+  // Only fixed-amount, active links count toward "expected to be paid".
+  const billable = links.filter(l => l.active && !l.allow_custom_amount)
+  const paidLinks = billable.filter(l => paidByLink[l.id])
+  const unpaidLinks = billable.filter(l => !paidByLink[l.id])
+  const collected = billable.reduce((s, l) => s + (paidByLink[l.id]?.total ?? 0), 0)
+  const expected = billable.reduce((s, l) => s + Number(l.amount ?? lineItemsTotal(l.line_items)), 0)
+  const outstanding = Math.max(0, expected - collected)
+
+  const visible = showOnly === 'paid'
+    ? links.filter(l => paidByLink[l.id])
+    : showOnly === 'unpaid'
+      ? links.filter(l => l.active && !l.allow_custom_amount && !paidByLink[l.id])
+      : links
   const [showForm, setShowForm] = useState(false)
   const [copied, setCopied] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
@@ -267,6 +289,27 @@ function LinksPanel({ links: initial }: { links: CheckoutLink[] }) {
       </div>
       {sendMsg && <p className="text-sm mb-3" style={{ color: 'var(--ink-2)' }}>{sendMsg}</p>}
 
+      {billable.length > 0 && (
+        <div className={`${card} mb-3 px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm`} style={cardBorder}>
+          <span style={{ color: 'var(--ink-2)' }}>
+            <strong style={{ color: 'var(--ink-1)' }}>{paidLinks.length}</strong> of {billable.length} paid
+          </span>
+          <span style={{ color: '#15803d' }}>${collected.toFixed(2)} collected</span>
+          <span style={{ color: outstanding > 0 ? '#b45309' : 'var(--ink-3)' }}>${outstanding.toFixed(2)} outstanding</span>
+          <div className="ml-auto flex gap-1">
+            {(['all', 'unpaid', 'paid'] as const).map(opt => (
+              <button key={opt} onClick={() => setShowOnly(opt)}
+                className="px-2.5 py-1 rounded-md text-xs font-medium border capitalize"
+                style={showOnly === opt
+                  ? { borderColor: 'var(--grad-1)', color: 'var(--ink-1)', background: 'rgba(99,102,241,0.06)' }
+                  : { ...cardBorder, color: 'var(--ink-3)' }}>
+                {opt}{opt === 'unpaid' ? ` (${unpaidLinks.length})` : opt === 'paid' ? ` (${paidLinks.length})` : ''}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {showForm && (
         <NewLinkForm
           onClose={() => setShowForm(false)}
@@ -274,16 +317,31 @@ function LinksPanel({ links: initial }: { links: CheckoutLink[] }) {
         />
       )}
 
-      {links.length === 0 ? (
-        <p className="text-sm py-8 text-center" style={{ color: 'var(--ink-4)' }}>No payment links yet.</p>
+      {visible.length === 0 ? (
+        <p className="text-sm py-8 text-center" style={{ color: 'var(--ink-4)' }}>
+          {links.length === 0 ? 'No payment links yet.' : 'No links match this filter.'}
+        </p>
       ) : (
         <div className="space-y-2">
-          {links.map(l => (
+          {visible.map(l => {
+            const paid = paidByLink[l.id]
+            const isBillable = l.active && !l.allow_custom_amount
+            return (
             <div key={l.id} className={`${card} flex items-center gap-3 px-4 py-3`} style={cardBorder}>
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium truncate" style={{ color: 'var(--ink-1)' }}>{l.title}</p>
+                  {l.recipient_name && (
+                    <span className="text-xs truncate" style={{ color: 'var(--ink-3)' }}>· {l.recipient_name}</span>
+                  )}
                   {!l.active && <span className="text-xs px-1.5 py-0.5 rounded" style={{ background: '#fee2e2', color: '#b91c1c' }}>inactive</span>}
+                  {paid ? (
+                    <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ background: '#dcfce7', color: '#166534' }}>
+                      Paid ${paid.total.toFixed(2)} · {new Date(paid.latest).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  ) : isBillable ? (
+                    <span className="text-xs px-1.5 py-0.5 rounded font-medium" style={{ background: '#fef3c7', color: '#92400e' }}>Unpaid</span>
+                  ) : null}
                 </div>
                 <p className="text-xs truncate" style={{ color: 'var(--ink-3)' }}>
                   {l.allow_custom_amount ? 'Custom amount' : `$${(l.amount ?? lineItemsTotal(l.line_items)).toFixed(2)}`} · /pay/{l.slug}
@@ -298,7 +356,7 @@ function LinksPanel({ links: initial }: { links: CheckoutLink[] }) {
               </button>
               <button onClick={() => remove(l)} title="Delete" className="p-2 rounded-lg" style={{ color: '#dc2626' }}><Trash2 size={16} /></button>
             </div>
-          ))}
+          )})}
         </div>
       )}
     </div>

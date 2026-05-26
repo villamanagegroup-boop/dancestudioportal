@@ -7,12 +7,23 @@ export const dynamic = 'force-dynamic'
 export default async function CheckoutPage() {
   const supabase = createAdminClient()
 
-  const [{ data: links }, { data: payments }, { data: contacts }, { data: profileRow }] = await Promise.all([
+  const [{ data: links }, { data: payments }, { data: linkPayments }, { data: contacts }, { data: profileRow }] = await Promise.all([
     supabase.from('checkout_links').select('*').order('created_at', { ascending: false }),
     supabase.from('checkout_payments').select('id, description, amount, source, created_at, paypal_capture_id').order('created_at', { ascending: false }).limit(100),
+    supabase.from('checkout_payments').select('link_id, amount, created_at').eq('status', 'paid').not('link_id', 'is', null),
     supabase.from('checkout_contacts').select('id, name, email, phone, marketing_opt_in, created_at').order('created_at', { ascending: false }).limit(200),
     supabase.from('studio_settings').select('value').eq('key', 'studio_profile').maybeSingle(),
   ])
+
+  const paidByLink: Record<string, { total: number; count: number; latest: string }> = {}
+  for (const p of linkPayments ?? []) {
+    const id = p.link_id as string
+    const cur = paidByLink[id] ?? { total: 0, count: 0, latest: p.created_at as string }
+    cur.total += Number(p.amount)
+    cur.count += 1
+    if ((p.created_at as string) > cur.latest) cur.latest = p.created_at as string
+    paidByLink[id] = cur
+  }
 
   const studioName = (profileRow?.value as any)?.name ?? 'Capital Core Dance Studio'
 
@@ -25,6 +36,7 @@ export default async function CheckoutPage() {
             <CheckoutManager
               links={(links as any) ?? []}
               payments={(payments as any) ?? []}
+              paidByLink={paidByLink}
               contacts={(contacts as any) ?? []}
               studioName={studioName}
             />
