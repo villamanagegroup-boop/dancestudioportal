@@ -4,6 +4,10 @@ import { NextRequest, NextResponse } from 'next/server'
 // Map a site-Supabase table name to the friendly form-type slug we store on
 // site_intake. Add a row here when a new public-site form table is wired up
 // to the Supabase DB webhook.
+//
+// `spirit_week_ideas` was intentionally removed 2026-06-01 — the form was
+// retired from the public site. If it's ever reinstated, add the mapping
+// back: spirit_week_ideas: 'spirit_week'.
 const FORM_TYPE_BY_TABLE: Record<string, string> = {
   contact_submissions:         'contact',
   birthday_bookings:           'birthday',
@@ -11,7 +15,6 @@ const FORM_TYPE_BY_TABLE: Record<string, string> = {
   summer_class_registrations:  'summer_class',
   recital_orders:              'recital_order',
   recital_shirt_orders:        'recital_shirt',
-  spirit_week_ideas:           'spirit_week',
   adult_series_interest:       'adult_series',
 }
 
