@@ -8,7 +8,7 @@ import {
   CreditCard, UserCheck, MessageSquare, Settings,
   Menu, X, Home, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
   Tent, Sparkles, CalendarCheck, BarChart2, GraduationCap,
-  Handshake, Activity, ShieldCheck, FileText, Database, Receipt,
+  Handshake, Activity, ShieldCheck, FileText, Database, Receipt, Inbox,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import PortalSwitcher, { type PortalKey } from '@/components/PortalSwitcher'
@@ -27,6 +27,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/calendar', icon: CalendarDays, label: 'Calendar' },
   { href: '/communications', icon: MessageSquare, label: 'Communications' },
+  { href: '/intake', icon: Inbox, label: 'Intake' },
   {
     href: '/accounts',
     icon: Users,
