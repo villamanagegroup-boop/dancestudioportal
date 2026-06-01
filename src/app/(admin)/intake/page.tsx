@@ -22,7 +22,15 @@ export default async function IntakePage({ searchParams }: PageProps) {
 
   let query = supabase
     .from('site_intake')
-    .select('id, source_form, source_table, submitter_name, submitter_email, payload, status, admin_notes, created_at, processed_at')
+    .select(`
+      id, source_form, source_table, submitter_name, submitter_email, payload,
+      status, admin_notes, created_at, processed_at,
+      linked_profile_id, linked_student_ids,
+      linked_profile:profiles!linked_profile_id(
+        id, first_name, last_name, email,
+        guardian_students(student:students(id, first_name, last_name))
+      )
+    `)
     .order('created_at', { ascending: false })
 
   if (source !== 'all') query = query.eq('source_form', source)
@@ -46,7 +54,7 @@ export default async function IntakePage({ searchParams }: PageProps) {
         <div className="page-gutter min-h-full">
           <div className="glass glass-page min-h-full">
             <IntakeInbox
-              rows={(rows ?? []) as IntakeRow[]}
+              rows={(rows ?? []) as unknown as IntakeRow[]}
               source={source}
               status={status}
               newCount={newCount ?? 0}

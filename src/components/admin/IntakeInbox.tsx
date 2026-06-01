@@ -9,6 +9,14 @@ import {
 } from '@/lib/intake'
 import IntakeDetail from '@/components/admin/IntakeDetail'
 
+export interface LinkedProfile {
+  id: string
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  guardian_students: { student: { id: string; first_name: string | null; last_name: string | null } | null }[] | null
+}
+
 export interface IntakeRow {
   id: string
   source_form: string
@@ -20,6 +28,9 @@ export interface IntakeRow {
   admin_notes: string | null
   created_at: string
   processed_at: string | null
+  linked_profile_id: string | null
+  linked_student_ids: string[] | null
+  linked_profile: LinkedProfile | null
 }
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
@@ -60,6 +71,7 @@ export default function IntakeInbox({
   const [isPending, startTransition] = useTransition()
   const [openRow, setOpenRow] = useState<IntakeRow | null>(null)
   const [dismissingId, setDismissingId] = useState<string | null>(null)
+  const [matchingId, setMatchingId] = useState<string | null>(null)
 
   function setFilter(key: 'source' | 'status', value: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -89,6 +101,26 @@ export default function IntakeInbox({
       showToast(e instanceof Error ? e.message : 'Failed to dismiss', 'error')
     } finally {
       setDismissingId(null)
+    }
+  }
+
+  async function match(id: string, profileId: string, studentIds: string[], label: string) {
+    setMatchingId(id)
+    try {
+      const res = await fetch(`/api/intake/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'match', profile_id: profileId, student_ids: studentIds }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'Failed to match')
+      showToast(`Matched to ${label}`)
+      setOpenRow(null)
+      startTransition(() => router.refresh())
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to match', 'error')
+    } finally {
+      setMatchingId(null)
     }
   }
 
@@ -211,6 +243,8 @@ export default function IntakeInbox({
           onClose={() => setOpenRow(null)}
           onDismiss={notes => dismiss(openRow.id, notes)}
           dismissing={dismissingId === openRow.id}
+          onMatch={(profileId, studentIds, label) => match(openRow.id, profileId, studentIds, label)}
+          matching={matchingId === openRow.id}
         />
       )}
     </>
