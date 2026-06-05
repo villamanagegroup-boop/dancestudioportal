@@ -34,9 +34,10 @@ export interface IntakeRow {
 }
 
 const STATUS_OPTIONS: { value: string; label: string }[] = [
-  { value: 'active', label: 'Active (hide dismissed)' },
+  { value: 'active', label: 'Active (needs attention)' },
   { value: 'new', label: 'New' },
   { value: 'matched', label: 'Matched' },
+  { value: 'invited', label: 'Invited' },
   { value: 'dismissed', label: 'Dismissed' },
   { value: 'duplicate', label: 'Duplicate' },
   { value: 'all', label: 'All statuses' },
@@ -45,6 +46,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
 const STATUS_BADGE: Record<string, string> = {
   new: 'bg-studio-50 text-studio-700',
   matched: 'bg-emerald-50 text-emerald-700',
+  invited: 'bg-sky-50 text-sky-700',
   dismissed: 'bg-gray-100 text-gray-500',
   duplicate: 'bg-amber-50 text-amber-700',
 }
@@ -72,6 +74,7 @@ export default function IntakeInbox({
   const [openRow, setOpenRow] = useState<IntakeRow | null>(null)
   const [dismissingId, setDismissingId] = useState<string | null>(null)
   const [matchingId, setMatchingId] = useState<string | null>(null)
+  const [convertingId, setConvertingId] = useState<string | null>(null)
 
   function setFilter(key: 'source' | 'status', value: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -101,6 +104,36 @@ export default function IntakeInbox({
       showToast(e instanceof Error ? e.message : 'Failed to dismiss', 'error')
     } finally {
       setDismissingId(null)
+    }
+  }
+
+  async function convert(id: string) {
+    setConvertingId(id)
+    try {
+      const res = await fetch(`/api/intake/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'convert' }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error || 'Failed to create family')
+      // Email already belongs to an existing account — nudge toward matching.
+      if (json.existing) {
+        showToast(json.message || 'An account already exists — match instead.', 'error')
+        return
+      }
+      showToast(
+        json.emailed
+          ? 'Family invited — portal invite sent'
+          : 'Family created — invite email failed; link saved to the note',
+        json.emailed ? 'success' : 'error',
+      )
+      setOpenRow(null)
+      startTransition(() => router.refresh())
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Failed to create family', 'error')
+    } finally {
+      setConvertingId(null)
     }
   }
 
@@ -245,6 +278,8 @@ export default function IntakeInbox({
           dismissing={dismissingId === openRow.id}
           onMatch={(profileId, studentIds, label) => match(openRow.id, profileId, studentIds, label)}
           matching={matchingId === openRow.id}
+          onConvert={() => convert(openRow.id)}
+          converting={convertingId === openRow.id}
         />
       )}
     </>

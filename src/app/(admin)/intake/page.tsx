@@ -39,7 +39,8 @@ export default async function IntakePage({ searchParams }: PageProps) {
   } else if (STATUS_VALUES.has(status)) {
     query = query.eq('status', status)
   } else {
-    query = query.neq('status', 'dismissed') // 'active' default
+    // 'active' default — hide fully-processed rows (dismissed + invited).
+    query = query.not('status', 'in', '(dismissed,invited)')
   }
 
   const [{ data: rows }, { count: newCount }] = await Promise.all([

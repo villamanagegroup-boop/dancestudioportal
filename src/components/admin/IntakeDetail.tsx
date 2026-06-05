@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { X, ChevronDown, ChevronRight, Users } from 'lucide-react'
+import { X, ChevronDown, ChevronRight, Users, UserPlus, Mail } from 'lucide-react'
 import SlideOver from '@/components/SlideOver'
-import { formLabel, detailRows, timeAgo } from '@/lib/intake'
+import { formLabel, detailRows, timeAgo, parseSubmitterName, detectDancer } from '@/lib/intake'
 import type { IntakeRow } from '@/components/admin/IntakeInbox'
 
 interface Candidate {
@@ -15,7 +15,7 @@ interface Candidate {
 }
 
 export default function IntakeDetail({
-  row, onClose, onDismiss, dismissing, onMatch, matching,
+  row, onClose, onDismiss, dismissing, onMatch, matching, onConvert, converting,
 }: {
   row: IntakeRow
   onClose: () => void
@@ -23,11 +23,19 @@ export default function IntakeDetail({
   dismissing: boolean
   onMatch: (profileId: string, studentIds: string[], label: string) => void
   matching: boolean
+  onConvert: () => void
+  converting: boolean
 }) {
   const [notes, setNotes] = useState('')
   const [showRaw, setShowRaw] = useState(false)
   const rows = detailRows(row.payload)
   const isDismissed = row.status === 'dismissed'
+  const isInvited = row.status === 'invited'
+
+  // Preview of the family/dancer the "create new family" action would stage.
+  const parsedName = parseSubmitterName(row.submitter_name)
+  const detectedDancer = detectDancer(row.payload, parsedName.last_name)
+  const canConvert = !!row.submitter_email && !!parsedName.first_name
 
   // Matched-family display (from the embedded profile on the row).
   const linked = row.linked_profile
@@ -121,7 +129,26 @@ export default function IntakeDetail({
           )}
         </div>
 
-        {isDismissed ? (
+        {isInvited ? (
+          /* Invited state — a new family was created and a portal invite sent */
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+            <div className="flex items-center gap-2">
+              <Mail size={15} className="text-sky-600" />
+              <p className="text-sm font-medium text-sky-900">Portal invite sent</p>
+            </div>
+            <p className="mt-1 text-xs text-sky-700">
+              {row.submitter_name || 'New family'}
+              {row.submitter_email ? ` · ${row.submitter_email}` : ''}
+              {row.processed_at ? ` · ${timeAgo(row.processed_at)}` : ''}
+            </p>
+            <p className="mt-2 text-xs text-sky-700">
+              Their account and dancer are created when they accept the invite and set a password.
+            </p>
+            {row.admin_notes && (
+              <p className="mt-2 text-sm text-sky-900 whitespace-pre-wrap break-words">{row.admin_notes}</p>
+            )}
+          </div>
+        ) : isDismissed ? (
           /* Dismissed state */
           <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
             <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Dismissed</p>
@@ -180,7 +207,7 @@ export default function IntakeDetail({
                     <p className="text-sm text-gray-400">Searching…</p>
                   ) : candidates && candidates.length === 0 ? (
                     <p className="text-sm text-gray-400">
-                      No matching families found. Creating a new family comes in a later phase.
+                      No matching families found. Create a new family below.
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -209,6 +236,57 @@ export default function IntakeDetail({
                     </div>
                   )}
                 </>
+              )}
+            </div>
+
+            {/* Create a new family + send a portal invite */}
+            <div className="border-t border-gray-100 pt-5">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                No match? Create a new family
+              </h3>
+              {!canConvert ? (
+                <p className="text-sm text-gray-400">
+                  Needs a sender name and email to invite. This submission is missing{' '}
+                  {!row.submitter_email && !parsedName.first_name
+                    ? 'both'
+                    : !row.submitter_email ? 'an email' : 'a name'}
+                  {' '}— match it to an existing family instead.
+                </p>
+              ) : (
+                <div className="rounded-xl border border-gray-100 p-4">
+                  <div className="text-sm text-gray-700">
+                    <span className="text-gray-500">Parent:</span>{' '}
+                    <span className="font-medium text-gray-900">
+                      {parsedName.first_name} {parsedName.last_name}
+                    </span>
+                    {' · '}{row.submitter_email}
+                  </div>
+                  <div className="mt-1 text-sm text-gray-700">
+                    <span className="text-gray-500">Dancer:</span>{' '}
+                    {detectedDancer ? (
+                      <span className="font-medium text-gray-900">
+                        {detectedDancer.first_name} {detectedDancer.last_name}
+                        {detectedDancer.date_of_birth
+                          ? ` (b. ${detectedDancer.date_of_birth})`
+                          : ' — added on accept once a birthdate is provided'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">none detected — parent can add on accept</span>
+                    )}
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    Creates a parent account and emails a portal invite. The dancer is added when they
+                    accept{detectedDancer?.date_of_birth ? '' : ' and provide a birthdate'}.
+                  </p>
+                  <button
+                    onClick={onConvert}
+                    disabled={converting}
+                    className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 disabled:opacity-50"
+                  >
+                    <UserPlus size={16} />
+                    {converting ? 'Creating…' : 'Create family & send invite'}
+                  </button>
+                </div>
               )}
             </div>
 

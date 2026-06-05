@@ -2,9 +2,9 @@
 // Pure data/format helpers (no React, no client deps) so both the server page
 // and the client components can import them.
 
-export type IntakeStatus = 'new' | 'matched' | 'dismissed' | 'duplicate'
+export type IntakeStatus = 'new' | 'matched' | 'dismissed' | 'duplicate' | 'invited'
 
-export const INTAKE_STATUSES: IntakeStatus[] = ['new', 'matched', 'dismissed', 'duplicate']
+export const INTAKE_STATUSES: IntakeStatus[] = ['new', 'matched', 'dismissed', 'duplicate', 'invited']
 
 // Source-form slugs, matching FORM_TYPE_BY_TABLE in
 // src/app/api/intake/from-site/route.ts. `spirit_week` was retired from the
@@ -128,6 +128,53 @@ export function detailRows(payload: Payload | null | undefined): { label: string
 
 export function truncate(s: string, n = 80): string {
   return s.length <= n ? s : s.slice(0, n).trimEnd() + '…'
+}
+
+// --- Phase 3: convert a submission into a new family + portal invite ---
+
+export interface DetectedDancer {
+  first_name: string
+  last_name: string
+  // ISO date 'YYYY-MM-DD' when the form supplied one; the accept flow only
+  // materializes a student record when a DOB is present.
+  date_of_birth: string | null
+}
+
+// Split a free-text submitter name into first/last. Last whitespace-delimited
+// token becomes the last name; everything before it is the first name. A
+// single token is treated as the first name only.
+export function parseSubmitterName(name: string | null | undefined): { first_name: string; last_name: string } {
+  const tokens = String(name ?? '').trim().split(/\s+/).filter(Boolean)
+  if (tokens.length === 0) return { first_name: '', last_name: '' }
+  if (tokens.length === 1) return { first_name: tokens[0], last_name: '' }
+  return { first_name: tokens.slice(0, -1).join(' '), last_name: tokens[tokens.length - 1] }
+}
+
+// Best-effort extraction of a dancer from a form payload. Probes the likely
+// name keys across the various site forms; returns null when no name is found.
+// DOB is optional — included only when the form carried one in a parseable form.
+export function detectDancer(
+  payload: Payload | null | undefined,
+  fallbackLastName = '',
+): DetectedDancer | null {
+  const p = payload ?? {}
+  const raw = firstOf(p, [
+    'camper_name', 'child_name', 'student_name', 'dancer_name', 'participant_name',
+  ])
+  if (!raw) return null
+  const { first_name, last_name } = parseSubmitterName(raw)
+  const dobRaw = firstOf(p, ['date_of_birth', 'dob', 'birthdate', 'birth_date'])
+  let date_of_birth: string | null = null
+  if (dobRaw) {
+    const d = new Date(dobRaw)
+    if (!isNaN(d.getTime())) date_of_birth = d.toISOString().slice(0, 10)
+  }
+  return { first_name, last_name: last_name || fallbackLastName, date_of_birth }
+}
+
+export function detectPhone(payload: Payload | null | undefined): string | null {
+  const v = firstOf(payload ?? {}, ['phone', 'phone_number', 'mobile', 'cell', 'contact_phone'])
+  return v || null
 }
 
 export function timeAgo(iso: string): string {
