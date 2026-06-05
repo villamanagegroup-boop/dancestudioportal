@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { UserPlus, Trash2 } from 'lucide-react'
-import { formatDate, getAgeFromDob, getEnrollmentStatusColor, cn } from '@/lib/utils'
+import { formatDate, formatAge, getEnrollmentStatusColor, cn } from '@/lib/utils'
 import type { Enrollment } from '@/components/admin/ClassDetail'
 
 interface StudentOption { id: string; first_name: string; last_name: string; date_of_birth: string }
@@ -116,7 +116,7 @@ export default function ClassRosterTab({ classId, enrollments, students }: Props
                 <tr key={e.id} className="hover:bg-gray-50">
                   <td className="px-5 py-3 text-sm font-medium text-gray-900">{name}</td>
                   <td className="px-5 py-3 text-sm text-gray-600">
-                    {e.student ? `${getAgeFromDob(e.student.date_of_birth)} yrs` : '—'}
+                    {e.student ? formatAge(e.student.date_of_birth) : '—'}
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-500">{formatDate(e.enrolled_at)}</td>
                   <td className="px-5 py-3">

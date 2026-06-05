@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Search, Plus, ChevronRight, ChevronUp, ChevronDown, Mail } from 'lucide-react'
-import { getAgeFromDob } from '@/lib/utils'
+import { formatAge } from '@/lib/utils'
 import StudentFormModal from '@/components/forms/StudentFormModal'
 import InviteAccountModal from '@/components/forms/InviteAccountModal'
 import RowActions from '@/components/admin/RowActions'
@@ -130,7 +130,7 @@ export default function StudentsTable({ students, families }: { students: Studen
                       </div>
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-600">
-                      {getAgeFromDob(student.date_of_birth)} yrs
+                      {formatAge(student.date_of_birth)}
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-600">{primaryGuardian(student)}</td>
                     <td className="px-5 py-3">

@@ -355,7 +355,7 @@ function OverviewTab({
                       {is_primary && <span className="ml-2 text-xs text-studio-600 bg-studio-50 px-1.5 py-0.5 rounded-full">primary</span>}
                       {!student!.active && <span className="ml-2 text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">inactive</span>}
                     </p>
-                    <p className="text-xs text-gray-500">Age {getAgeFromDob(student!.date_of_birth)} · {relationship}</p>
+                    <p className="text-xs text-gray-500">{student!.date_of_birth ? `Age ${getAgeFromDob(student!.date_of_birth)} · ` : ''}{relationship}</p>
                   </div>
                 </div>
                 <Link href={`/students/${student!.id}`} className="text-gray-400 hover:text-gray-600"><ChevronRight size={16} /></Link>
@@ -1596,7 +1596,7 @@ function AdultDancerSection({ profile, linkedStudents }: { profile: FamilyProfil
             <Sparkles size={16} className="text-studio-600" />
             <div>
               <p className="text-sm font-medium text-gray-900">{selfLink.student.first_name} {selfLink.student.last_name}</p>
-              <p className="text-xs text-gray-600">Self-enrolled · age {getAgeFromDob(selfLink.student.date_of_birth)}</p>
+              <p className="text-xs text-gray-600">Self-enrolled{selfLink.student.date_of_birth ? ` · age ${getAgeFromDob(selfLink.student.date_of_birth)}` : ''}</p>
             </div>
           </div>
           <Link href={`/students/${selfLink.student.id}`} className="text-sm font-medium text-studio-600 hover:text-studio-700">
