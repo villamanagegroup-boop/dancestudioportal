@@ -9,13 +9,13 @@ import PortalMobileNav from '@/components/portal/PortalMobileNav'
 import Logo from '@/components/Logo'
 
 const navItems = [
-  { href: '/portal', icon: Home, label: 'Home' },
-  { href: '/portal/classes', icon: Calendar, label: 'Classes' },
-  { href: '/portal/camps', icon: Tent, label: 'Camps' },
-  { href: '/portal/billing', icon: CreditCard, label: 'Billing' },
-  { href: '/portal/documents', icon: FileText, label: 'Documents' },
-  { href: '/portal/announcements', icon: Megaphone, label: 'News' },
-  { href: '/portal/account', icon: UserCircle, label: 'Account' },
+  { href: '/portal', icon: Home, iconKey: 'home', label: 'Home' },
+  { href: '/portal/classes', icon: Calendar, iconKey: 'classes', label: 'Classes' },
+  { href: '/portal/camps', icon: Tent, iconKey: 'camps', label: 'Camps' },
+  { href: '/portal/billing', icon: CreditCard, iconKey: 'billing', label: 'Billing' },
+  { href: '/portal/documents', icon: FileText, iconKey: 'documents', label: 'Documents' },
+  { href: '/portal/announcements', icon: Megaphone, iconKey: 'news', label: 'News' },
+  { href: '/portal/account', icon: UserCircle, iconKey: 'account', label: 'Account' },
 ]
 
 export default async function ParentLayout({ children }: { children: React.ReactNode }) {
@@ -63,7 +63,13 @@ export default async function ParentLayout({ children }: { children: React.React
               <LogOut size={15} />
               <span className="hidden sm:inline">Sign out</span>
             </Link>
-            <PortalMobileNav items={[...navItems, { href: '/login', icon: LogOut, label: 'Sign out' }]} title="Capital Core" />
+            <PortalMobileNav
+              items={[
+                ...navItems.map(({ href, label, iconKey }) => ({ href, label, icon: iconKey })),
+                { href: '/login', icon: 'signout', label: 'Sign out' },
+              ]}
+              title="Capital Core"
+            />
           </div>
         </div>
       </header>

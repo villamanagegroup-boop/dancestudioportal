@@ -3,13 +3,25 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X } from 'lucide-react'
+import {
+  Menu, X, Home, Calendar, Tent, CreditCard, FileText, Megaphone,
+  UserCircle, LogOut, LayoutDashboard,
+} from 'lucide-react'
 import Portal from '@/components/Portal'
+
+// Icons are referenced by string key so the items array stays serializable
+// when passed from a Server Component layout to this Client Component.
+const ICONS: Record<string, React.ElementType> = {
+  home: Home, classes: Calendar, camps: Tent, billing: CreditCard,
+  documents: FileText, news: Megaphone, account: UserCircle,
+  signout: LogOut, dashboard: LayoutDashboard,
+}
 
 export interface PortalNavItem {
   href: string
   label: string
-  icon?: React.ElementType
+  /** Key into the ICONS map above. */
+  icon?: string
 }
 
 /**
@@ -85,7 +97,8 @@ export default function PortalMobileNav({ items, title = 'Menu' }: { items: Port
                 </button>
               </div>
               <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-0.5">
-                {items.map(({ href, label, icon: Icon }) => {
+                {items.map(({ href, label, icon }) => {
+                  const Icon = icon ? ICONS[icon] : undefined
                   const active = isActive(href)
                   return (
                     <Link
