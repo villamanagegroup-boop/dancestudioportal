@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Mail, Phone, MapPin, Tag as TagIcon, Pencil, Trash2, Plus, X, ChevronRight,
   CheckCircle2, XCircle, AlertCircle, Send, MessageSquare, Clock, FileText, Calendar, UserPlus, Sparkles,
-  CreditCard, Tent, Cake, Receipt, DollarSign, BookOpen, Upload, Download, Loader2,
+  CreditCard, Tent, Cake, Receipt, DollarSign, BookOpen, Upload, Download, Loader2, Zap,
 } from 'lucide-react'
 import { cn, formatCurrency, formatDate, formatTime, getAgeFromDob, getPaymentStatusColor, getEnrollmentStatusColor } from '@/lib/utils'
 import AdminNotesPanel from './AdminNotesPanel'
@@ -582,7 +582,7 @@ function BillingTab({
   linkedStudents: LinkedStudent[]
   outstanding: number
 }) {
-  const [panel, setPanel] = useState<null | 'charge' | 'payment' | 'card'>(null)
+  const [panel, setPanel] = useState<null | 'charge' | 'payment' | 'card' | 'chargeCard'>(null)
 
   // Build the ledger: interleave invoices (debit) and payments (credit), oldest first, with running balance.
   const events = [
@@ -641,11 +641,13 @@ function BillingTab({
       <div className="flex flex-wrap gap-2">
         <ActionBtn icon={<Receipt size={14} />} label="Add charge" active={panel === 'charge'} onClick={() => setPanel(panel === 'charge' ? null : 'charge')} />
         <ActionBtn icon={<DollarSign size={14} />} label="Take payment" active={panel === 'payment'} onClick={() => setPanel(panel === 'payment' ? null : 'payment')} />
+        <ActionBtn icon={<Zap size={14} />} label="Charge card on file" active={panel === 'chargeCard'} onClick={() => setPanel(panel === 'chargeCard' ? null : 'chargeCard')} />
         <ActionBtn icon={<CreditCard size={14} />} label="Add card on file" active={panel === 'card'} onClick={() => setPanel(panel === 'card' ? null : 'card')} />
       </div>
 
       {panel === 'charge' && <AddChargeForm familyId={familyId} students={studentOptions} onClose={() => setPanel(null)} />}
       {panel === 'payment' && <TakePaymentForm familyId={familyId} openInvoices={openInvoices} cards={paymentMethods} onClose={() => setPanel(null)} />}
+      {panel === 'chargeCard' && <ChargeCardForm guardianId={familyId} openInvoices={openInvoices} cards={paymentMethods} onClose={() => setPanel(null)} />}
       {panel === 'card' && <AddCardForm familyId={familyId} onClose={() => setPanel(null)} />}
 
       <Section title="Cards on file">
@@ -856,6 +858,91 @@ function TakePaymentForm({ familyId, openInvoices, cards, onClose }: {
         <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Cancel</button>
         <button type="submit" disabled={busy} className="px-3 py-1.5 text-sm rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50">
           {busy ? 'Recording...' : 'Record payment'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function ChargeCardForm({ guardianId, openInvoices, cards, onClose }: {
+  guardianId: string
+  openInvoices: Invoice[]
+  cards: PaymentMethodRow[]
+  onClose: () => void
+}) {
+  const router = useRouter()
+  const [form, setForm] = useState({ payment_method_id: '', mode: 'invoice' as 'invoice' | 'custom', invoice_id: '', amount: '', description: '' })
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  // Default to the family's default card if there is one.
+  const defaultCardId = cards.find(c => c.is_default)?.id ?? cards[0]?.id ?? ''
+  const methodId = form.payment_method_id || defaultCardId
+
+  function pickInvoice(id: string) {
+    const inv = openInvoices.find(i => i.id === id)
+    setForm(f => ({ ...f, invoice_id: id, amount: inv ? String(inv.amount) : f.amount }))
+  }
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!methodId) { setError('No card on file to charge.'); return }
+    if (form.mode === 'invoice' && !form.invoice_id) { setError('Pick an invoice to charge.'); return }
+    if (form.mode === 'custom' && !(Number(form.amount) > 0)) { setError('Enter an amount.'); return }
+    const amount = form.mode === 'custom' ? Number(form.amount) : undefined
+    if (!confirm(`Charge $${(form.mode === 'custom' ? Number(form.amount) : Number(openInvoices.find(i => i.id === form.invoice_id)?.amount ?? 0)).toFixed(2)} to the card on file?`)) return
+    setBusy(true); setError('')
+    try {
+      const res = await fetch('/api/paypal/charge-saved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          guardian_id: guardianId,
+          payment_method_id: methodId,
+          invoice_id: form.mode === 'invoice' ? form.invoice_id : null,
+          amount,
+          description: form.mode === 'custom' ? form.description : undefined,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Charge failed')
+      showToast(`Charged $${Number(json.amount).toFixed(2)} to the card on file`, 'success')
+      onClose()
+      router.refresh()
+    } catch (err: any) { setError(err.message) } finally { setBusy(false) }
+  }
+
+  return (
+    <form onSubmit={submit} className="p-4 rounded-xl border border-violet-200 bg-violet-50/30 space-y-3">
+      {error && <div className="p-2 rounded bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
+      {cards.length === 0 && (
+        <p className="text-sm text-gray-500">No cards on file for this family. Add one first.</p>
+      )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <Select label="Card on file" value={methodId} onChange={v => setForm({ ...form, payment_method_id: v })}
+          options={cards.map(c => ({ value: c.id, label: `${c.card_brand ?? 'Card'} •••• ${c.last_four ?? '????'}${c.is_default ? ' (default)' : ''}` }))} />
+        <Select label="Charge" value={form.mode} onChange={v => setForm({ ...form, mode: v as 'invoice' | 'custom' })}
+          options={[{ value: 'invoice', label: 'An open invoice' }, { value: 'custom', label: 'A custom amount' }]} />
+        {form.mode === 'invoice' ? (
+          <Select label="Invoice" value={form.invoice_id} onChange={pickInvoice}
+            options={[
+              { value: '', label: '— Select an invoice —' },
+              ...openInvoices.map(i => ({ value: i.id, label: `${i.description} · ${formatCurrency(Number(i.amount))}` })),
+            ]} />
+        ) : (
+          <>
+            <Input label="Amount" type="number" value={form.amount} onChange={v => setForm({ ...form, amount: v })} required placeholder="50.00" />
+            <Input label="Description" value={form.description} onChange={v => setForm({ ...form, description: v })} placeholder="One-off charge" />
+          </>
+        )}
+      </div>
+      <p className="text-xs text-gray-500">
+        Charges the saved PayPal card now. Only cards saved through PayPal can be charged.
+      </p>
+      <div className="flex gap-2 justify-end">
+        <button type="button" onClick={onClose} className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50">Cancel</button>
+        <button type="submit" disabled={busy || cards.length === 0} className="px-3 py-1.5 text-sm rounded-lg bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50">
+          {busy ? 'Charging…' : 'Charge card'}
         </button>
       </div>
     </form>

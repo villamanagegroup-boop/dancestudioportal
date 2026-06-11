@@ -3,8 +3,9 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn, formatCurrency, formatDate, getPaymentStatusColor } from '@/lib/utils'
-import { DollarSign, Clock, AlertTriangle, ChevronUp, ChevronDown, Search, Pencil, Trash2, Check } from 'lucide-react'
+import { DollarSign, Clock, AlertTriangle, ChevronUp, ChevronDown, Search, Pencil, Trash2, Check, Zap } from 'lucide-react'
 import InvoiceFormModal from '@/components/forms/InvoiceFormModal'
+import { showToast } from '@/lib/toast'
 
 type SortKey = 'guardian' | 'student' | 'amount' | 'due' | 'status'
 type SortDir = 'asc' | 'desc'
@@ -102,6 +103,27 @@ export default function BillingDashboard({ invoices, guardians, students, collec
         const json = await res.json().catch(() => ({}))
         throw new Error(json.error ?? 'Failed to update invoice')
       }
+      router.refresh()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  async function chargeCard(inv: Invoice) {
+    const who = inv.guardian ? `${inv.guardian.first_name} ${inv.guardian.last_name}` : 'this family'
+    if (!confirm(`Charge ${formatCurrency(Number(inv.amount))} to ${who}'s card on file?`)) return
+    setBusyId(inv.id)
+    try {
+      const res = await fetch('/api/paypal/charge-saved', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guardian_id: inv.guardian_id, invoice_id: inv.id }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json.error ?? 'Charge failed')
+      showToast(`Charged ${formatCurrency(Number(json.amount ?? inv.amount))} to the card on file`, 'success')
       router.refresh()
     } catch (err: any) {
       alert(err.message)
@@ -230,13 +252,23 @@ export default function BillingDashboard({ invoices, guardians, students, collec
                     <td className="px-5 py-3">
                       <div className="flex items-center justify-end gap-1">
                         {inv.status === 'pending' && (
-                          <button
-                            onClick={() => patchInvoice(inv.id, { status: 'paid' })}
-                            disabled={busyId === inv.id}
-                            className="flex items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700 px-2 py-1 rounded-md hover:bg-green-50 disabled:opacity-50"
-                          >
-                            <Check size={13} /> Mark Paid
-                          </button>
+                          <>
+                            <button
+                              onClick={() => chargeCard(inv)}
+                              disabled={busyId === inv.id}
+                              className="flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700 px-2 py-1 rounded-md hover:bg-violet-50 disabled:opacity-50"
+                              title="Charge the family's card on file"
+                            >
+                              <Zap size={13} /> Charge card
+                            </button>
+                            <button
+                              onClick={() => patchInvoice(inv.id, { status: 'paid' })}
+                              disabled={busyId === inv.id}
+                              className="flex items-center gap-1 text-xs font-medium text-green-600 hover:text-green-700 px-2 py-1 rounded-md hover:bg-green-50 disabled:opacity-50"
+                            >
+                              <Check size={13} /> Mark Paid
+                            </button>
+                          </>
                         )}
                         <button
                           onClick={() => setEditing(inv)}
