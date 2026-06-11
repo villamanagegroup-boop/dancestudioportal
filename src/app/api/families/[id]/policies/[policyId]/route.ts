@@ -1,29 +1,26 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Record a guardian's response to a policy on their behalf (admin action).
+// Body: { action: 'accept' | 'deny' | 'reset', reason?: string }
+// Back-compat: { accept: true } => accept, { accept: false } => reset.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string; policyId: string }> }) {
   const { id, policyId } = await params
-  const { accept } = await req.json()
+  const body = await req.json().catch(() => ({}))
+  const action: 'accept' | 'deny' | 'reset' =
+    body.action ?? (body.accept === true ? 'accept' : body.accept === false ? 'reset' : 'accept')
+  const reason: string | null = typeof body.reason === 'string' ? body.reason.trim() : null
+
   const supabase = createAdminClient()
 
   const { data: policy } = await supabase.from('policies').select('version').eq('id', policyId).single()
   if (!policy) return NextResponse.json({ error: 'policy not found' }, { status: 404 })
 
-  if (accept) {
-    const { error } = await supabase.from('policy_acceptances').upsert({
-      guardian_id: id,
-      policy_id: policyId,
-      policy_version: policy.version,
-      accepted_at: new Date().toISOString(),
-    }, { onConflict: 'guardian_id,policy_id,policy_version' })
-    if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+  if (action === 'deny' && !reason) {
+    return NextResponse.json({ error: 'A reason is required to deny a policy.' }, { status: 400 })
+  }
 
-    await supabase.from('family_activity_log').insert({
-      guardian_id: id,
-      action: 'policy_accepted_by_admin',
-      meta: { policy_id: policyId, version: policy.version },
-    })
-  } else {
+  if (action === 'reset') {
     const { error } = await supabase
       .from('policy_acceptances')
       .delete()
@@ -33,10 +30,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     await supabase.from('family_activity_log').insert({
       guardian_id: id,
-      action: 'policy_acceptance_reset',
+      action: 'policy_response_reset',
       meta: { policy_id: policyId },
     })
+    return NextResponse.json({ ok: true })
   }
+
+  const accepted = action === 'accept'
+  const { error } = await supabase.from('policy_acceptances').upsert({
+    guardian_id: id,
+    policy_id: policyId,
+    policy_version: policy.version,
+    status: accepted ? 'accepted' : 'denied',
+    denial_reason: accepted ? null : reason,
+    accepted_at: new Date().toISOString(),
+  }, { onConflict: 'guardian_id,policy_id,policy_version' })
+  if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  await supabase.from('family_activity_log').insert({
+    guardian_id: id,
+    action: accepted ? 'policy_accepted_by_admin' : 'policy_denied_by_admin',
+    meta: { policy_id: policyId, version: policy.version, reason: accepted ? undefined : reason },
+  })
 
   return NextResponse.json({ ok: true })
 }

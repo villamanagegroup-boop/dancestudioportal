@@ -12,3 +12,6 @@
 alter table site_intake drop constraint if exists site_intake_status_check;
 alter table site_intake add constraint site_intake_status_check
   check (status in ('new', 'matched', 'dismissed', 'duplicate', 'invited'));
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('site_intake_phase3.sql') on conflict (filename) do nothing;

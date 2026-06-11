@@ -8,7 +8,7 @@ export default async function StudentsPage() {
     supabase
       .from('students')
       .select(`
-        id, first_name, last_name, date_of_birth, active,
+        id, first_name, last_name, date_of_birth, active, member_no,
         guardian_students(
           guardian:profiles(first_name, last_name, email)
         )

@@ -10,3 +10,6 @@ alter table profiles
   add column if not exists extra_roles text[] not null default '{}';
 
 create index if not exists profiles_extra_roles_gin on profiles using gin (extra_roles);
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('extra_roles_module.sql') on conflict (filename) do nothing;

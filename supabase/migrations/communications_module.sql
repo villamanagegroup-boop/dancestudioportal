@@ -29,3 +29,6 @@ drop policy if exists "guardians_own_communication_recipients" on communication_
 create policy "guardians_own_communication_recipients" on communication_recipients for select using (
   guardian_id = auth.uid()
 );
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('communications_module.sql') on conflict (filename) do nothing;

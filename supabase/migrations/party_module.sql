@@ -59,3 +59,6 @@ create policy "admins_all_party_files_storage" on storage.objects for all using 
   bucket_id = 'party-files'
   and exists (select 1 from profiles where id = auth.uid() and role = 'admin')
 );
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('party_module.sql') on conflict (filename) do nothing;

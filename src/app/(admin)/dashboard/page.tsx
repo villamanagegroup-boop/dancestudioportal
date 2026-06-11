@@ -58,6 +58,9 @@ export default async function DashboardPage() {
       `)
       .eq('day_of_week', todayDay)
       .eq('active', true)
+      // Don't surface a class whose run window doesn't include today.
+      .or(`start_date.is.null,start_date.lte.${todayIso}`)
+      .or(`end_date.is.null,end_date.gte.${todayIso}`)
       .order('start_time'),
     supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('enrollments').select('*', { count: 'exact', head: true }).eq('status', 'waitlisted'),

@@ -1,4 +1,5 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
+import { getParentPortalSettings } from '@/lib/portal-settings'
 import { formatDate, cn } from '@/lib/utils'
 import CampSignupCard from '@/components/portal/CampSignupCard'
 import SectionHead from '@/components/admin/SectionHead'
@@ -15,6 +16,17 @@ const NO_ID = '00000000-0000-0000-0000-000000000000'
 export default async function ParentCampsPage() {
   const { db, effectiveId } = await getPortalViewer('g')
   const gid = effectiveId ?? NO_ID
+  const settings = await getParentPortalSettings()
+
+  if (!settings.show_camps) {
+    return (
+      <div className="py-16 text-center">
+        <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>Camps</p>
+        <h1 className="h1 mt-2" style={{ fontSize: 22 }}>Camp registration is currently unavailable.</h1>
+        <p className="mt-2 muted" style={{ fontSize: 13 }}>Please contact the studio to register.</p>
+      </div>
+    )
+  }
 
   const { data: guardianStudents } = await db
     .from('guardian_students')

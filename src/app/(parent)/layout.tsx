@@ -1,19 +1,21 @@
 import Link from 'next/link'
-import { Home, Calendar, CreditCard, FileText, Tent, Megaphone, LogOut, UserCircle } from 'lucide-react'
+import { Home, Calendar, CreditCard, FileText, Tent, Megaphone, LogOut, UserCircle, ShieldCheck } from 'lucide-react'
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAvailablePortals } from '@/lib/portal-access'
+import { getParentPortalSettings } from '@/lib/portal-settings'
 import PortalSwitcher from '@/components/PortalSwitcher'
 import ViewAsBar from '@/components/portal/ViewAsBar'
 import PortalMobileNav from '@/components/portal/PortalMobileNav'
 import Logo from '@/components/Logo'
 
-const navItems = [
+const ALL_NAV = [
   { href: '/portal', icon: Home, iconKey: 'home', label: 'Home' },
   { href: '/portal/classes', icon: Calendar, iconKey: 'classes', label: 'Classes' },
   { href: '/portal/camps', icon: Tent, iconKey: 'camps', label: 'Camps' },
   { href: '/portal/billing', icon: CreditCard, iconKey: 'billing', label: 'Billing' },
   { href: '/portal/documents', icon: FileText, iconKey: 'documents', label: 'Documents' },
+  { href: '/portal/policies', icon: ShieldCheck, iconKey: 'policies', label: 'Policies' },
   { href: '/portal/announcements', icon: Megaphone, iconKey: 'news', label: 'News' },
   { href: '/portal/account', icon: UserCircle, iconKey: 'account', label: 'Account' },
 ]
@@ -37,6 +39,13 @@ export default async function ParentLayout({ children }: { children: React.React
 
   const switcherRole = viewer.canPreview ? 'admin' : viewer.role ?? 'parent'
   const available = await getAvailablePortals(viewer.realUserId, switcherRole)
+
+  // Hide portal sections the studio has switched off in Settings → Parent Portal.
+  const settings = await getParentPortalSettings()
+  const navItems = ALL_NAV.filter(item =>
+    (item.href !== '/portal/classes' || settings.show_classes) &&
+    (item.href !== '/portal/camps' || settings.show_camps),
+  )
 
   return (
     <div className="min-h-screen">

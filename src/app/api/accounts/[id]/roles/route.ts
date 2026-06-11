@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 
   const [{ data: profile }, { data: instructor }, { data: partner }, { data: hasStudents }] = await Promise.all([
     auth.admin.from('profiles').select('id, role, first_name, last_name, email, extra_roles').eq('id', id).maybeSingle(),
-    auth.admin.from('instructors').select('id, active').eq('profile_id', id).maybeSingle(),
+    auth.admin.from('instructors').select('id, active, staff_role').eq('profile_id', id).maybeSingle(),
     auth.admin.from('partners').select('id, active, name').eq('profile_id', id).maybeSingle(),
     auth.admin.from('guardian_students').select('id').eq('guardian_id', id).limit(1).maybeSingle(),
   ])
@@ -30,14 +30,17 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
 
   const extra: string[] = (profile as any).extra_roles ?? []
+  const isOwner = (instructor as any)?.staff_role === 'owner'
 
   return NextResponse.json({
     profile,
+    isOwner,
     entitlements: {
-      admin: profile.role === 'admin',
-      instructor: !!(instructor && instructor.active),
-      partner: !!(partner && partner.active),
-      parent: profile.role === 'parent' || extra.includes('parent') || !!hasStudents,
+      // The owner implicitly has every portal, regardless of stored role.
+      admin: profile.role === 'admin' || isOwner,
+      instructor: isOwner || !!(instructor && instructor.active),
+      partner: isOwner || !!(partner && partner.active),
+      parent: isOwner || profile.role === 'parent' || extra.includes('parent') || !!hasStudents,
     },
     parentPrimary: profile.role === 'parent',
     linkedRows: {
@@ -65,6 +68,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const { data: profile } = await auth.admin
     .from('profiles').select('id, first_name, last_name, email, role, extra_roles').eq('id', id).single()
   if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 })
+
+  // The owner always retains full access — refuse to strip portals from them.
+  const { data: ownerRow } = await auth.admin
+    .from('instructors').select('id').eq('profile_id', id).eq('staff_role', 'owner').maybeSingle()
+  if (ownerRow && action === 'remove') {
+    return NextResponse.json({ error: 'The studio owner always has access to every portal and cannot be removed.' }, { status: 400 })
+  }
 
   if (role === 'parent') {
     // If their primary role is already parent, nothing to do.

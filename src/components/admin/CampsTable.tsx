@@ -6,6 +6,8 @@ import { Plus, Tent, ChevronUp, ChevronDown } from 'lucide-react'
 import { formatCurrency } from '@/lib/utils'
 import CampFormModal from '@/components/forms/CampFormModal'
 import RowActions from '@/components/admin/RowActions'
+import BulkEditBar, { type BulkField } from '@/components/admin/BulkEditBar'
+import { useRowSelection } from '@/components/admin/useRowSelection'
 
 interface Camp {
   id: string
@@ -52,6 +54,23 @@ export default function CampsTable({ camps, instructors, rooms, regCounts }: Pro
   const [showModal, setShowModal] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('start')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const { selected, toggle, setMany, clear } = useRowSelection()
+
+  const bulkFields: BulkField[] = [
+    { key: 'start_date', label: 'Start date', type: 'date' },
+    { key: 'end_date', label: 'End date', type: 'date' },
+    { key: 'start_time', label: 'Start time', type: 'time' },
+    { key: 'end_time', label: 'End time', type: 'time' },
+    { key: 'price', label: 'Price', type: 'currency', placeholder: '0.00' },
+    { key: 'deposit_amount', label: 'Deposit', type: 'currency', placeholder: '0.00' },
+    { key: 'max_capacity', label: 'Max capacity', type: 'number' },
+    { key: 'age_min', label: 'Min age', type: 'number' },
+    { key: 'age_max', label: 'Max age', type: 'number' },
+    { key: 'instructor_id', label: 'Instructor', type: 'select', options: instructors.map(i => ({ value: i.id, label: `${i.first_name} ${i.last_name}` })) },
+    { key: 'room_id', label: 'Room', type: 'select', options: rooms.map(r => ({ value: r.id, label: r.name })) },
+    { key: 'registration_open', label: 'Registration open', type: 'boolean' },
+    { key: 'active', label: 'Active', type: 'boolean' },
+  ]
 
   function toggleSort(col: SortKey) {
     if (sortKey === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -95,6 +114,16 @@ export default function CampsTable({ camps, instructors, rooms, regCounts }: Pro
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      aria-label="Select all camps"
+                      checked={sorted.length > 0 && sorted.every(c => selected.has(c.id))}
+                      ref={el => { if (el) el.indeterminate = sorted.some(c => selected.has(c.id)) && !sorted.every(c => selected.has(c.id)) }}
+                      onChange={e => setMany(sorted.map(c => c.id), e.target.checked)}
+                      className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                    />
+                  </th>
                   {cols.map(([col, label]) => (
                     <th key={col} onClick={() => toggleSort(col)} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
                       {label}<SortIcon col={col} sortKey={sortKey} sortDir={sortDir} />
@@ -110,7 +139,16 @@ export default function CampsTable({ camps, instructors, rooms, regCounts }: Pro
                 {sorted.map(camp => {
                   const status = statusOf(camp)
                   return (
-                    <tr key={camp.id} className="group hover:bg-gray-50">
+                    <tr key={camp.id} className={`group hover:bg-gray-50 ${selected.has(camp.id) ? 'bg-studio-50/50' : ''}`}>
+                      <td className="px-4 py-3 w-10">
+                        <input
+                          type="checkbox"
+                          aria-label={`Select ${camp.name}`}
+                          checked={selected.has(camp.id)}
+                          onChange={() => toggle(camp.id)}
+                          className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                        />
+                      </td>
                       <td className="px-5 py-3">
                         <Link href={`/camps/${camp.id}`} className="text-sm font-medium text-gray-900 hover:text-studio-700">
                           {camp.name}
@@ -169,6 +207,13 @@ export default function CampsTable({ camps, instructors, rooms, regCounts }: Pro
         )}
       </div>
       {showModal && <CampFormModal onClose={() => setShowModal(false)} instructors={instructors} rooms={rooms} />}
+      <BulkEditBar
+        ids={[...selected]}
+        endpointBase="/api/camps"
+        entityLabel="camp"
+        fields={bulkFields}
+        onClear={clear}
+      />
     </>
   )
 }

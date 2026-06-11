@@ -2,6 +2,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import Header from '@/components/admin/Header'
 import CalendarView from '@/components/admin/CalendarView'
 
+// Always re-query on load so newly imported camps and edits made in the
+// classes/camps/parties modules are reflected immediately (no stale snapshot).
+export const dynamic = 'force-dynamic'
+
 type View = 'day' | 'week' | 'month'
 
 function iso(d: Date) {
@@ -62,8 +66,10 @@ export default async function CalendarPage({ searchParams }: PageProps) {
     { data: classTypes },
     { data: seasons },
   ] = await Promise.all([
+    // Select * (plus display joins) so calendar items carry every column the
+    // "Duplicate" quick-action needs to clone a full row.
     supabase.from('classes').select(`
-      id, name, day_of_week, start_time, end_time, instructor_id, room_id,
+      *,
       instructor:instructors(first_name, last_name),
       class_type:class_types(style, color),
       room:rooms(name)
@@ -71,11 +77,11 @@ export default async function CalendarPage({ searchParams }: PageProps) {
     supabase.from('calendar_events').select('*, room:rooms(name)')
       .lte('start_date', rangeEndIso)
       .or(`recurrence.eq.weekly,end_date.gte.${rangeStartIso},and(end_date.is.null,start_date.gte.${rangeStartIso})`),
-    supabase.from('camps').select('id, name, start_date, end_date, start_time, end_time, room_id, room:rooms(name)')
+    supabase.from('camps').select('*, room:rooms(name)')
       .lte('start_date', rangeEndIso).gte('end_date', rangeStartIso),
-    supabase.from('parties').select('id, contact_name, event_date, start_time, end_time, room_id, status, room:rooms(name)')
+    supabase.from('parties').select('*, room:rooms(name)')
       .gte('event_date', rangeStartIso).lte('event_date', rangeEndIso),
-    supabase.from('bookings').select('id, title, booking_date, start_time, end_time, room_id, booking_type, status, room:rooms(name)')
+    supabase.from('bookings').select('*, room:rooms(name)')
       .gte('booking_date', rangeStartIso).lte('booking_date', rangeEndIso),
     supabase.from('studio_hours').select('*'),
     supabase.from('instructors').select('id, first_name, last_name').eq('active', true).order('last_name'),

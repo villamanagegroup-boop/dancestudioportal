@@ -1,6 +1,7 @@
 'use client'
 
 import { iso, DAY_LABELS, type CalItem } from '@/lib/calendar'
+import CalItemActions from '@/components/admin/CalItemActions'
 
 interface Props {
   gridDates: Date[]      // 42 dates (6 weeks)
@@ -9,6 +10,7 @@ interface Props {
   conflicts: Set<string>
   onSlotClick: (date: Date) => void
   onItemClick: (item: CalItem) => void
+  onEditItem: (item: CalItem) => void
 }
 
 function itemsForDate(items: CalItem[], dateKey: string) {
@@ -17,7 +19,7 @@ function itemsForDate(items: CalItem[], dateKey: string) {
   )
 }
 
-export default function CalendarMonthGrid({ gridDates, monthIndex, items, conflicts, onSlotClick, onItemClick }: Props) {
+export default function CalendarMonthGrid({ gridDates, monthIndex, items, conflicts, onSlotClick, onItemClick, onEditItem }: Props) {
   const todayIso = iso(new Date())
 
   return (
@@ -58,18 +60,25 @@ export default function CalendarMonthGrid({ gridDates, monthIndex, items, confli
 
               <div className="flex flex-col gap-0.5">
                 {shown.map(item => (
-                  <button
+                  <div
                     key={item.key}
-                    onClick={() => onItemClick(item)}
-                    title={item.title}
-                    className="flex items-center gap-1 text-left rounded px-1 py-0.5 text-[11px] font-medium text-white truncate"
+                    className="group/ci flex items-center gap-0.5 rounded px-1 py-0.5 text-white"
                     style={{
                       background: item.color,
                       outline: conflicts.has(item.key) ? '2px solid #ef4444' : undefined,
                     }}
                   >
-                    <span className="truncate">{item.title}</span>
-                  </button>
+                    <button
+                      onClick={() => onItemClick(item)}
+                      title={item.title}
+                      className="flex-1 min-w-0 truncate text-left text-[11px] font-medium"
+                    >
+                      {item.title}
+                    </button>
+                    <span className="opacity-0 group-hover/ci:opacity-100 transition-opacity">
+                      <CalItemActions item={item} onEdit={onEditItem} tone="light" />
+                    </span>
+                  </div>
                 ))}
                 {extra > 0 && (
                   <button

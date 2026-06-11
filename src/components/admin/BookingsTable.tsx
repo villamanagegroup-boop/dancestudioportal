@@ -6,6 +6,8 @@ import { formatCurrency, cn } from '@/lib/utils'
 import BookingFormModal from '@/components/forms/BookingFormModal'
 import RowActions from '@/components/admin/RowActions'
 import KpiStrip from '@/components/admin/KpiStrip'
+import BulkEditBar, { type BulkField } from '@/components/admin/BulkEditBar'
+import { useRowSelection } from '@/components/admin/useRowSelection'
 
 interface Booking {
   id: string
@@ -119,6 +121,18 @@ export default function BookingsTable({ bookings, rooms, partners }: {
   const cols: [SortKey, string][] = [['title', 'Booking'], ['date', 'Date'], ['type', 'Type'], ['price', 'Price'], ['status', 'Status']]
   const selectCls = 'px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:border-studio-500'
 
+  const { selected, toggle, setMany, clear } = useRowSelection()
+  const bulkFields: BulkField[] = [
+    { key: 'booking_date', label: 'Date', type: 'date' },
+    { key: 'start_time', label: 'Start time', type: 'time' },
+    { key: 'end_time', label: 'End time', type: 'time' },
+    { key: 'booking_type', label: 'Type', type: 'select', options: Object.entries(TYPE_LABELS).map(([v, l]) => ({ value: v, label: l })) },
+    { key: 'status', label: 'Status', type: 'select', options: ['inquiry', 'confirmed', 'completed', 'cancelled'].map(s => ({ value: s, label: s[0].toUpperCase() + s.slice(1) })) },
+    { key: 'price', label: 'Price', type: 'currency', placeholder: '0.00' },
+    { key: 'room_id', label: 'Room', type: 'select', options: rooms.map(r => ({ value: r.id, label: r.name })) },
+    { key: 'partner_id', label: 'Partner', type: 'select', options: partners.map(p => ({ value: p.id, label: p.name })) },
+  ]
+
   return (
     <>
       <KpiStrip items={[
@@ -194,6 +208,16 @@ export default function BookingsTable({ bookings, rooms, partners }: {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      aria-label="Select all bookings"
+                      checked={sorted.length > 0 && sorted.every(b => selected.has(b.id))}
+                      ref={el => { if (el) el.indeterminate = sorted.some(b => selected.has(b.id)) && !sorted.every(b => selected.has(b.id)) }}
+                      onChange={e => setMany(sorted.map(b => b.id), e.target.checked)}
+                      className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                    />
+                  </th>
                   {cols.map(([col, label]) => (
                     <th key={col} onClick={() => toggleSort(col)} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
                       {label}<SortIcon col={col} sortKey={sortKey} sortDir={sortDir} />
@@ -207,7 +231,16 @@ export default function BookingsTable({ bookings, rooms, partners }: {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {sorted.map(b => (
-                  <tr key={b.id} className="group hover:bg-gray-50">
+                  <tr key={b.id} className={cn('group hover:bg-gray-50', selected.has(b.id) && 'bg-studio-50/50')}>
+                    <td className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${b.title}`}
+                        checked={selected.has(b.id)}
+                        onChange={() => toggle(b.id)}
+                        className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                      />
+                    </td>
                     <td className="px-5 py-3">
                       <button onClick={() => setEditing(b)} className="text-sm font-medium text-gray-900 hover:text-studio-700 text-left">
                         {b.title}
@@ -259,6 +292,13 @@ export default function BookingsTable({ bookings, rooms, partners }: {
 
       {showAdd && <BookingFormModal onClose={() => setShowAdd(false)} rooms={rooms} partners={partners} />}
       {editing && <BookingFormModal onClose={() => setEditing(null)} rooms={rooms} partners={partners} booking={editing} />}
+      <BulkEditBar
+        ids={[...selected]}
+        endpointBase="/api/bookings"
+        entityLabel="booking"
+        fields={bulkFields}
+        onClear={clear}
+      />
     </>
   )
 }

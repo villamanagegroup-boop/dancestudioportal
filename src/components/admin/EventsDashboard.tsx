@@ -7,6 +7,8 @@ import { formatCurrency, cn } from '@/lib/utils'
 import PartyFormModal from '@/components/forms/PartyFormModal'
 import KpiStrip from '@/components/admin/KpiStrip'
 import RowActions from '@/components/admin/RowActions'
+import BulkEditBar, { type BulkField } from '@/components/admin/BulkEditBar'
+import { useRowSelection } from '@/components/admin/useRowSelection'
 
 type EventType = 'party' | 'recital' | 'event'
 
@@ -63,6 +65,20 @@ function timeLabel(t: string | null | undefined) {
 export default function EventsDashboard({ parties, rooms }: Props) {
   const [addType, setAddType] = useState<EventType | null>(null)
   const today = todayIso()
+  const { selected, toggle, clear } = useRowSelection()
+
+  const bulkFields: BulkField[] = [
+    { key: 'event_date', label: 'Date', type: 'date' },
+    { key: 'start_time', label: 'Start time', type: 'time' },
+    { key: 'end_time', label: 'End time', type: 'time' },
+    { key: 'event_type', label: 'Type', type: 'select', options: [{ value: 'party', label: 'Party' }, { value: 'recital', label: 'Recital' }, { value: 'event', label: 'Studio event' }] },
+    { key: 'status', label: 'Status', type: 'select', options: ['inquiry', 'confirmed', 'completed', 'cancelled'].map(s => ({ value: s, label: s[0].toUpperCase() + s.slice(1) })) },
+    { key: 'room_id', label: 'Room', type: 'select', options: rooms.map(r => ({ value: r.id, label: r.name })) },
+    { key: 'package', label: 'Package', type: 'text' },
+    { key: 'price', label: 'Price', type: 'currency', placeholder: '0.00' },
+    { key: 'guest_count', label: 'Guest count', type: 'number' },
+    { key: 'deposit_paid', label: 'Deposit paid', type: 'boolean' },
+  ]
 
   function byType(type: EventType) {
     const list = parties.filter(p => (p.event_type ?? 'party') === type)
@@ -116,6 +132,13 @@ export default function EventsDashboard({ parties, rooms }: Props) {
                   const isPast = p.event_date < today || p.status === 'cancelled'
                   return (
                     <div key={p.id} className="tl-row" style={isPast ? { opacity: 0.5 } : undefined}>
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${p.contact_name || 'event'}`}
+                        checked={selected.has(p.id)}
+                        onChange={() => toggle(p.id)}
+                        className="rounded border-gray-300 text-studio-600 focus:ring-studio-500 mr-1 self-center"
+                      />
                       <div className="tl-lead">
                         <div className="t">{dateLabel(p.event_date)}</div>
                         <div className="s">{timeLabel(p.start_time)}{p.end_time ? ` – ${timeLabel(p.end_time)}` : ''}</div>
@@ -155,6 +178,13 @@ export default function EventsDashboard({ parties, rooms }: Props) {
       {addType && (
         <PartyFormModal onClose={() => setAddType(null)} rooms={rooms} eventType={addType} />
       )}
+      <BulkEditBar
+        ids={[...selected]}
+        endpointBase="/api/parties"
+        entityLabel="event"
+        fields={bulkFields}
+        onClear={clear}
+      />
     </div>
   )
 }

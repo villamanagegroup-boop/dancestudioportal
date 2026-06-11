@@ -53,3 +53,6 @@ create policy "guardians_own_attendance" on attendance for select using (
     where gs.guardian_id = auth.uid() and gs.student_id = attendance.student_id
   )
 );
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('parent_portal.sql') on conflict (filename) do nothing;

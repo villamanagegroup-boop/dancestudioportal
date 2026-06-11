@@ -51,3 +51,6 @@ create policy "admins_all_site_intake" on site_intake for all using (
 
 comment on table site_intake is
   'Form submissions from capitalcoredance.com. Ingested via Supabase DB webhook → /api/intake/from-site. Admin matches each row to an existing family or converts it into a real record.';
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('site_intake_module.sql') on conflict (filename) do nothing;

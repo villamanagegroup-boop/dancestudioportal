@@ -28,13 +28,25 @@ export async function getPortalViewer(kind: Kind): Promise<PortalViewer> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  const admin = createAdminClient()
+
+  // Resolve role + owner status with the admin client (RLS bypass). The SSR
+  // client can return null here if profiles has no self-read policy, which
+  // would misclassify an admin/owner as a parent and lock them out of portals.
   let role: string | null = null
+  let isOwner = false
   if (user) {
-    const { data } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-    role = data?.role ?? 'parent'
+    const [{ data: prof }, { data: ownerRow }] = await Promise.all([
+      admin.from('profiles').select('role').eq('id', user.id).maybeSingle(),
+      admin.from('instructors').select('id').eq('profile_id', user.id).eq('staff_role', 'owner').maybeSingle(),
+    ])
+    role = prof?.role ?? 'parent'
+    isOwner = !!ownerRow
   }
 
-  const canPreview = !user || role === 'admin'
+  // Admins and the studio owner can preview any portal (as can the no-session
+  // dev bypass).
+  const canPreview = !user || role === 'admin' || isOwner
 
   // The cookie stores "g:<id>" or "i:<id>" so the two portals don't collide.
   let viewAsId: string | null = null
@@ -42,8 +54,6 @@ export async function getPortalViewer(kind: Kind): Promise<PortalViewer> {
     const raw = (await cookies()).get(COOKIE)?.value
     if (raw && raw.startsWith(kind + ':')) viewAsId = raw.slice(2) || null
   }
-
-  const admin = createAdminClient()
 
   let effectiveId: string | null
   if (canPreview) {
@@ -86,6 +96,9 @@ export async function getPortalViewer(kind: Kind): Promise<PortalViewer> {
     canPreview,
     isPreview,
     effectiveId,
-    db: isPreview ? admin : supabase,
+    // Always the service-role client: every portal query is scoped by
+    // effectiveId, and this keeps reads working under RLS lockdown (the
+    // service role bypasses RLS; the anon key is denied by default).
+    db: admin,
   }
 }

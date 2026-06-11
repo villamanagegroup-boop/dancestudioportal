@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Mail, Phone, MapPin, Tag as TagIcon, Pencil, Trash2, Plus, X, ChevronRight,
-  CheckCircle2, AlertCircle, Send, MessageSquare, Clock, FileText, Calendar, UserPlus, Sparkles,
-  CreditCard, Tent, Cake, Receipt, DollarSign, BookOpen,
+  CheckCircle2, XCircle, AlertCircle, Send, MessageSquare, Clock, FileText, Calendar, UserPlus, Sparkles,
+  CreditCard, Tent, Cake, Receipt, DollarSign, BookOpen, Upload, Download, Loader2,
 } from 'lucide-react'
 import { cn, formatCurrency, formatDate, formatTime, getAgeFromDob, getPaymentStatusColor, getEnrollmentStatusColor } from '@/lib/utils'
 import AdminNotesPanel from './AdminNotesPanel'
@@ -73,7 +73,7 @@ interface Policy {
   body: string | null
   required: boolean
   version: number
-  acceptance: { accepted_at: string; policy_version: number } | null
+  acceptance: { accepted_at: string; policy_version: number; status?: string; denial_reason?: string | null } | null
 }
 
 interface FamilyNote {
@@ -191,7 +191,7 @@ interface Props {
   activity: ActivityEntry[]
 }
 
-const tabs = ['Overview', 'Billing', 'Enrollments', 'Policies', 'Notes', 'Communications', 'Activity'] as const
+const tabs = ['Overview', 'Billing', 'Enrollments', 'Policies', 'Documents', 'Notes', 'Communications', 'Activity'] as const
 type Tab = typeof tabs[number]
 
 export default function FamilyTabs(props: Props) {
@@ -205,7 +205,9 @@ export default function FamilyTabs(props: Props) {
     .filter(p => !p.refunded_at && new Date(p.paid_at).getFullYear() === new Date().getFullYear())
     .reduce((s, p) => s + Number(p.amount), 0)
 
-  const requiredMissing = props.policies.filter(p => p.required && !p.acceptance).length
+  const requiredMissing = props.policies.filter(p =>
+    p.required && (!p.acceptance || p.acceptance.status === 'denied' || p.acceptance.policy_version !== p.version),
+  ).length
   const announcements = props.notes.filter(n => n.kind === 'announcement')
 
   return (
@@ -251,6 +253,7 @@ export default function FamilyTabs(props: Props) {
         {active === 'Billing' && <BillingTab familyId={props.profile.id} invoices={props.invoices} payments={props.payments} paymentMethods={props.paymentMethods} linkedStudents={props.linkedStudents} outstanding={outstanding} />}
         {active === 'Enrollments' && <EnrollmentsTab classEnrollments={props.classEnrollments} campRegistrations={props.campRegistrations} parties={props.parties} bookings={props.bookings} appointments={props.appointments} />}
         {active === 'Policies' && <PoliciesTab familyId={props.profile.id} policies={props.policies} />}
+        {active === 'Documents' && <DocumentsTab familyId={props.profile.id} />}
         {active === 'Notes' && <NotesTab familyId={props.profile.id} notes={props.notes} />}
         {active === 'Communications' && <CommunicationsTab familyId={props.profile.id} profile={props.profile} log={props.commLog} broadcasts={props.broadcasts} />}
         {active === 'Activity' && <ActivityTab entries={props.activity} />}
@@ -912,36 +915,52 @@ function AddCardForm({ familyId, onClose }: { familyId: string; onClose: () => v
 function PoliciesTab({ familyId, policies }: { familyId: string; policies: Policy[] }) {
   const router = useRouter()
   const [busy, setBusy] = useState<string | null>(null)
+  const [denying, setDenying] = useState<string | null>(null)
+  const [reason, setReason] = useState('')
 
-  async function toggle(policyId: string, accept: boolean) {
+  async function act(policyId: string, action: 'accept' | 'deny' | 'reset', why?: string) {
     setBusy(policyId)
     await fetch(`/api/families/${familyId}/policies/${policyId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ accept }),
+      body: JSON.stringify({ action, reason: why }),
     })
     setBusy(null)
+    setDenying(null)
+    setReason('')
     router.refresh()
   }
 
   if (policies.length === 0) {
-    return <p className="text-sm text-gray-400">No policies are configured. Add one in <Link className="text-studio-600 underline" href="/settings">Settings</Link>.</p>
+    return <p className="text-sm text-gray-400">No policies are configured. Manage them in <Link className="text-studio-600 underline" href="/policies">Policies</Link>.</p>
   }
+
+  const denials = policies.filter(p => p.acceptance?.status === 'denied')
 
   return (
     <div className="space-y-3">
+      {denials.length > 0 && (
+        <div className="p-3 rounded-xl border border-red-200 bg-red-50 text-sm text-red-700">
+          {denials.length} {denials.length === 1 ? 'policy was' : 'policies were'} denied by this family and {denials.length === 1 ? 'needs' : 'need'} review.
+        </div>
+      )}
       {policies.map(p => {
-        const accepted = !!p.acceptance
+        const status = p.acceptance?.status ?? (p.acceptance ? 'accepted' : null)
+        const accepted = status === 'accepted'
+        const denied = status === 'denied'
         const stale = accepted && p.acceptance!.policy_version !== p.version
         return (
           <div key={p.id} className={cn(
             'p-4 rounded-xl border flex items-start gap-4',
             accepted && !stale ? 'border-green-200 bg-green-50/30' :
+            denied ? 'border-red-200 bg-red-50/30' :
             stale ? 'border-amber-200 bg-amber-50/30' :
             p.required ? 'border-orange-200 bg-orange-50/30' : 'border-gray-200'
           )}>
             <div className="mt-1">
-              {accepted && !stale ? <CheckCircle2 size={18} className="text-green-600" /> : <AlertCircle size={18} className={p.required ? 'text-orange-500' : 'text-gray-400'} />}
+              {accepted && !stale ? <CheckCircle2 size={18} className="text-green-600" />
+                : denied ? <XCircle size={18} className="text-red-500" />
+                : <AlertCircle size={18} className={p.required ? 'text-orange-500' : 'text-gray-400'} />}
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2">
@@ -953,22 +972,160 @@ function PoliciesTab({ familyId, policies }: { familyId: string; policies: Polic
               <p className="text-xs text-gray-500 mt-1">
                 {accepted
                   ? <>Accepted {formatDate(p.acceptance!.accepted_at)} (v{p.acceptance!.policy_version}{stale ? ' — outdated' : ''})</>
-                  : <>Not accepted</>}
+                  : denied
+                    ? <>Denied {formatDate(p.acceptance!.accepted_at)} — under review</>
+                    : <>Not accepted</>}
               </p>
-            </div>
-            <button
-              onClick={() => toggle(p.id, !accepted || stale)}
-              disabled={busy === p.id}
-              className={cn(
-                'px-3 py-1.5 text-xs font-medium rounded-lg disabled:opacity-50',
-                accepted && !stale ? 'border border-gray-200 text-gray-600 hover:bg-gray-50' : 'bg-studio-600 text-white hover:bg-studio-700'
+              {denied && p.acceptance!.denial_reason && (
+                <p className="text-xs text-red-700 mt-1 italic">Reason: “{p.acceptance!.denial_reason}”</p>
               )}
-            >
-              {busy === p.id ? '...' : accepted && !stale ? 'Reset' : 'Mark accepted'}
-            </button>
+
+              {denying === p.id && (
+                <div className="mt-2">
+                  <textarea
+                    value={reason}
+                    onChange={e => setReason(e.target.value)}
+                    rows={2}
+                    placeholder="Reason for denial (required)…"
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-studio-500"
+                  />
+                  <div className="flex items-center gap-2 mt-1.5">
+                    <button onClick={() => act(p.id, 'deny', reason)} disabled={busy === p.id || !reason.trim()} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">Save denial</button>
+                    <button onClick={() => { setDenying(null); setReason('') }} className="px-3 py-1.5 text-xs font-medium rounded-lg text-gray-600 hover:bg-gray-100">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
+            {denying !== p.id && (
+              <div className="flex flex-col gap-1.5">
+                {!(accepted && !stale) && (
+                  <button onClick={() => act(p.id, 'accept')} disabled={busy === p.id} className="px-3 py-1.5 text-xs font-medium rounded-lg bg-studio-600 text-white hover:bg-studio-700 disabled:opacity-50">
+                    {busy === p.id ? '...' : 'Mark accepted'}
+                  </button>
+                )}
+                {!denied && (
+                  <button onClick={() => { setDenying(p.id); setReason('') }} disabled={busy === p.id} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-50">Deny</button>
+                )}
+                {p.acceptance && (
+                  <button onClick={() => act(p.id, 'reset')} disabled={busy === p.id} className="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 disabled:opacity-50">Reset</button>
+                )}
+              </div>
+            )}
           </div>
         )
       })}
+    </div>
+  )
+}
+
+/* --------------------------------------------------------------------- */
+/* Documents                                                             */
+/* --------------------------------------------------------------------- */
+
+interface FamilyDoc {
+  id: string
+  title: string
+  document_type: string
+  description: string | null
+  source: string
+  signed_at: string | null
+}
+
+function DocumentsTab({ familyId }: { familyId: string }) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [docs, setDocs] = useState<FamilyDoc[] | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)
+  const [error, setError] = useState('')
+
+  async function load() {
+    const res = await fetch(`/api/families/${familyId}/documents`)
+    const data = await res.json().catch(() => ({}))
+    setDocs(res.ok ? (data.documents ?? []) : [])
+    if (!res.ok) setError(data.error ?? 'Failed to load')
+  }
+  useEffect(() => { load() }, [familyId])
+
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true); setError('')
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const res = await fetch(`/api/families/${familyId}/documents`, { method: 'POST', body: fd })
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error ?? 'Upload failed') }
+      await load()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setUploading(false)
+      if (inputRef.current) inputRef.current.value = ''
+    }
+  }
+
+  async function remove(id: string) {
+    if (!confirm('Remove this document from the family’s portal?')) return
+    setBusy(id); setError('')
+    try {
+      const res = await fetch(`/api/families/${familyId}/documents/${id}`, { method: 'DELETE' })
+      if (!res.ok) { const j = await res.json().catch(() => ({})); throw new Error(j.error ?? 'Delete failed') }
+      await load()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  if (docs === null) return <p className="text-sm text-gray-400">Loading…</p>
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-gray-500">Documents shared to this family&apos;s portal and anything they&apos;ve uploaded.</p>
+        <label className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-studio-600 text-white text-xs font-medium hover:bg-studio-700 cursor-pointer">
+          {uploading ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
+          {uploading ? 'Sharing…' : 'Share a document'}
+          <input ref={inputRef} type="file" className="hidden" onChange={onFile} disabled={uploading} />
+        </label>
+      </div>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {docs.length === 0 ? (
+        <div className="py-10 text-center rounded-xl border border-dashed border-gray-200">
+          <FileText size={26} className="mx-auto text-gray-300 mb-2" />
+          <p className="text-sm text-gray-500">No documents yet. Share one to place it in their portal.</p>
+        </div>
+      ) : (
+        <div className="divide-y divide-gray-50 rounded-xl border border-gray-100">
+          {docs.map(d => (
+            <div key={d.id} className="flex items-center gap-3 px-4 py-3">
+              <FileText size={15} className="text-gray-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{d.title}</p>
+                <p className="text-xs text-gray-400">
+                  {d.source === 'studio' ? 'Shared by studio' : 'Uploaded by family'}
+                  {d.signed_at && <> · {formatDate(d.signed_at)}</>}
+                  {d.description && <> · {d.description}</>}
+                </p>
+              </div>
+              <span className={cn('text-[10px] uppercase px-1.5 py-0.5 rounded-full', d.source === 'studio' ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-600')}>
+                {d.source === 'studio' ? 'Studio' : 'Family'}
+              </span>
+              <a href={`/api/families/${familyId}/documents/${d.id}`} target="_blank" rel="noopener noreferrer"
+                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100" aria-label="Download">
+                <Download size={15} />
+              </a>
+              <button onClick={() => remove(d.id)} disabled={busy === d.id}
+                className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50" aria-label="Remove">
+                {busy === d.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={15} />}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

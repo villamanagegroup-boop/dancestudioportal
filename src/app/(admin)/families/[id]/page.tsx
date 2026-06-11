@@ -48,8 +48,8 @@ export default async function FamilyDetailPage({ params }: { params: Promise<{ i
     supabase.from('payment_methods').select('id, last_four, card_brand, is_default, created_at')
       .eq('guardian_id', id).order('is_default', { ascending: false }).order('created_at', { ascending: false }),
     supabase.from('students').select('id, first_name, last_name').eq('active', true).order('last_name'),
-    supabase.from('policies').select('*').eq('active', true).order('name'),
-    supabase.from('policy_acceptances').select('policy_id, accepted_at, policy_version').eq('guardian_id', id),
+    supabase.from('policies').select('*').eq('active', true).order('sort_order').order('name'),
+    supabase.from('policy_acceptances').select('policy_id, accepted_at, policy_version, status, denial_reason').eq('guardian_id', id),
     supabase.from('family_notes').select(`
       id, body, pinned, kind, created_at,
       author:profiles!family_notes_author_id_fkey(first_name, last_name)

@@ -65,9 +65,10 @@ interface Props {
 
 const STATUS_OPTIONS = ['all', 'active', 'waitlisted', 'dropped', 'completed', 'pending']
 const SETTABLE_STATUSES = ['active', 'waitlisted', 'pending', 'completed', 'dropped']
-const CAMP_STATUSES = ['registered', 'waitlisted', 'cancelled', 'completed']
+const CAMP_STATUSES = ['pending', 'registered', 'waitlisted', 'cancelled', 'completed']
 const CAMP_PAYMENTS = ['unpaid', 'deposit', 'paid', 'refunded', 'waived']
 const CAMP_STATUS_COLOR: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
   registered: 'bg-green-100 text-green-700',
   waitlisted: 'bg-yellow-100 text-yellow-700',
   cancelled: 'bg-gray-100 text-gray-500',

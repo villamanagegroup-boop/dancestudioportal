@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Menu, X, Home, Calendar, Tent, CreditCard, FileText, Megaphone,
-  UserCircle, LogOut, LayoutDashboard,
+  UserCircle, LogOut, LayoutDashboard, ShieldCheck,
 } from 'lucide-react'
 import Portal from '@/components/Portal'
 
@@ -14,7 +14,7 @@ import Portal from '@/components/Portal'
 const ICONS: Record<string, React.ElementType> = {
   home: Home, classes: Calendar, camps: Tent, billing: CreditCard,
   documents: FileText, news: Megaphone, account: UserCircle,
-  signout: LogOut, dashboard: LayoutDashboard,
+  policies: ShieldCheck, signout: LogOut, dashboard: LayoutDashboard,
 }
 
 export interface PortalNavItem {

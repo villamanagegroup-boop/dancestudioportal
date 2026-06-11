@@ -6,6 +6,7 @@ import { Check } from 'lucide-react'
 
 const DEFAULTS = {
   name: 'Capital Core Dance Studio',
+  code: 'CCD',
   email: 'info@capitalcoredance.com',
   phone: '(804) 234-4014',
   address: '13110 Midlothian Turnpike, Midlothian, VA 23113',
@@ -58,9 +59,16 @@ export default function StudioProfileForm({ initial }: { initial: Record<string,
       </div>
       <form onSubmit={save} className="p-5 space-y-4">
         {error && <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Studio Name</label>
-          <input value={form.name} onChange={e => set('name', e.target.value)} className={fieldClass} />
+        <div className="grid grid-cols-[1fr_auto] gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Studio Name</label>
+            <input value={form.name} onChange={e => set('name', e.target.value)} className={fieldClass} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Family ID prefix</label>
+            <input value={form.code ?? ''} onChange={e => set('code', e.target.value.toUpperCase().slice(0, 6))} placeholder="CCD" className={`${fieldClass} w-28 font-mono uppercase`} />
+            <p className="text-[11px] text-gray-400 mt-1">Shown before family numbers, e.g. {(form.code || 'CCD')}1042</p>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>

@@ -65,3 +65,6 @@ create policy studio_hours_admin on studio_hours for all using (
 );
 drop policy if exists studio_hours_readable on studio_hours;
 create policy studio_hours_readable on studio_hours for select using (true);
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('calendar_module.sql') on conflict (filename) do nothing;

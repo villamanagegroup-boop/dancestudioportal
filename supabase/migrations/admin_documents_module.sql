@@ -29,3 +29,6 @@ drop policy if exists "admins_all_documents" on admin_documents;
 create policy "admins_all_documents" on admin_documents for all using (
   exists (select 1 from profiles where id = auth.uid() and role = 'admin')
 );
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('admin_documents_module.sql') on conflict (filename) do nothing;

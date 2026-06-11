@@ -28,3 +28,6 @@ drop policy if exists "admins_all_invites" on account_invites;
 create policy "admins_all_invites" on account_invites for all using (
   exists (select 1 from profiles where id = auth.uid() and role = 'admin')
 );
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('account_invites_module.sql') on conflict (filename) do nothing;

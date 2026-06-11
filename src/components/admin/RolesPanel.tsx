@@ -40,6 +40,7 @@ export default function RolesPanel({ profileId }: { profileId: string }) {
   const router = useRouter()
   const [entitlements, setEntitlements] = useState<Entitlements | null>(null)
   const [parentPrimary, setParentPrimary] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState<Role | null>(null)
 
@@ -54,6 +55,7 @@ export default function RolesPanel({ profileId }: { profileId: string }) {
       }
       setEntitlements(data.entitlements)
       setParentPrimary(!!data.parentPrimary)
+      setIsOwner(!!data.isOwner)
     } catch (e: any) {
       setError(e?.message ?? 'Network error')
     }
@@ -103,6 +105,12 @@ export default function RolesPanel({ profileId }: { profileId: string }) {
         </div>
       </div>
 
+      {isOwner && (
+        <div className="px-5 py-3 bg-studio-50 border-b border-studio-100 text-sm text-studio-700 flex items-center gap-2">
+          <Shield size={15} /> Studio owner — full access to every portal. These can't be turned off.
+        </div>
+      )}
+
       {error && (
         <div className="px-5 py-3 bg-red-50 border-b border-red-100 text-sm text-red-700">{error}</div>
       )}
@@ -113,8 +121,9 @@ export default function RolesPanel({ profileId }: { profileId: string }) {
           const Icon = meta.icon
           const active = entitlements?.[role] ?? false
           const isBusy = busy === role
-          // Parent can't be toggled off when it's the account's primary role.
-          const locked = role === 'parent' && parentPrimary
+          // Parent can't be toggled off when it's the account's primary role;
+          // the owner's portals are all permanently on.
+          const locked = isOwner || (role === 'parent' && parentPrimary)
           return (
             <div key={role} className="px-5 py-3 flex items-center gap-3">
               <Icon size={18} className={active ? 'text-studio-600' : 'text-gray-400'} />

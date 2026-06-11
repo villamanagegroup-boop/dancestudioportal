@@ -326,11 +326,17 @@ create policy student_activity_admin on student_activity_log for all using (
 );
 
 -- 8. Seed default policies -------------------------------------------
+-- DISABLED 2026-06-10: these placeholder policies were superseded by the real
+-- Capital Core content in policies_content_and_denials.sql. They had no unique
+-- key, so re-running this file duplicated them. Left commented for history.
+--
+-- insert into policies (name, body, required, version)
+-- values
+--   ('Studio Code of Conduct', 'Families agree to studio etiquette, attendance, and dress code expectations.', true, 1),
+--   ('Photo / Media Release', 'Permission to use student photos and video for studio promotional material.', false, 1),
+--   ('Tuition & Refund Policy', 'Monthly tuition is due on the 1st. No refunds after the second class of a session.', true, 1),
+--   ('Liability Waiver',        'Acknowledgement of physical risk inherent to dance instruction.', true, 1)
+-- on conflict do nothing;
 
-insert into policies (name, body, required, version)
-values
-  ('Studio Code of Conduct', 'Families agree to studio etiquette, attendance, and dress code expectations.', true, 1),
-  ('Photo / Media Release', 'Permission to use student photos and video for studio promotional material.', false, 1),
-  ('Tuition & Refund Policy', 'Monthly tuition is due on the 1st. No refunds after the second class of a session.', true, 1),
-  ('Liability Waiver',        'Acknowledgement of physical risk inherent to dance instruction.', true, 1)
-on conflict do nothing;
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('family_module.sql') on conflict (filename) do nothing;

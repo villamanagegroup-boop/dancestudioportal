@@ -12,6 +12,7 @@ import CalendarTimeGrid from '@/components/admin/CalendarTimeGrid'
 import CalendarMonthGrid from '@/components/admin/CalendarMonthGrid'
 import CalendarCreateModal, { type SlotContext } from '@/components/forms/CalendarCreateModal'
 import CalendarEventModal from '@/components/forms/CalendarEventModal'
+import BookingFormModal from '@/components/forms/BookingFormModal'
 
 type View = 'day' | 'week' | 'month'
 
@@ -43,6 +44,7 @@ export default function CalendarView(props: Props) {
 
   const [createCtx, setCreateCtx] = useState<SlotContext | null>(null)
   const [editEvent, setEditEvent] = useState<any | null>(null)
+  const [editBooking, setEditBooking] = useState<any | null>(null)
   const [kinds, setKinds] = useState<Set<CalKind>>(new Set(ALL_KINDS))
   const [roomFilter, setRoomFilter] = useState('')
   const [instructorFilter, setInstructorFilter] = useState('')
@@ -70,6 +72,10 @@ export default function CalendarView(props: Props) {
       for (const d of gridDates) {
         if (dowKey(d) !== c.day_of_week) continue
         const key = iso(d)
+        // Honor the class's run dates — a class with a future start_date
+        // (or a past end_date) must not appear outside that window.
+        if (c.start_date && key < c.start_date) continue
+        if (c.end_date && key > c.end_date) continue
         out.push({
           key: `class-${c.id}-${key}`,
           sourceId: c.id,
@@ -297,6 +303,14 @@ export default function CalendarView(props: Props) {
     if (item.editable) setEditEvent(item.raw)
     else if (item.href) router.push(item.href)
   }
+  // "Edit" from the item's ⋮ menu — open the right surface per kind.
+  function onEditItem(item: CalItem) {
+    if (item.kind === 'event') setEditEvent(item.raw)
+    else if (item.kind === 'booking') setEditBooking(item.raw)
+    else if (item.kind === 'class') router.push(`/classes/${item.sourceId}`)
+    else if (item.kind === 'camp') router.push(`/camps/${item.sourceId}`)
+    else if (item.kind === 'party') router.push(`/parties/${item.sourceId}`)
+  }
   async function onItemDrop(item: CalItem, date: Date, hour: number) {
     if (!item.draggable || item.startHour == null) return
     const dur = (item.endHour ?? item.startHour + 1) - item.startHour
@@ -402,6 +416,7 @@ export default function CalendarView(props: Props) {
             conflicts={conflicts}
             onSlotClick={d => openCreate(d)}
             onItemClick={onItemClick}
+            onEditItem={onEditItem}
           />
         ) : (
           <CalendarTimeGrid
@@ -413,6 +428,7 @@ export default function CalendarView(props: Props) {
             onSlotClick={openCreate}
             onItemClick={onItemClick}
             onItemDrop={onItemDrop}
+            onEditItem={onEditItem}
           />
         )}
         <p className="text-xs text-gray-400 mt-3">
@@ -436,6 +452,13 @@ export default function CalendarView(props: Props) {
           onClose={() => setEditEvent(null)}
           rooms={props.rooms}
           event={editEvent}
+        />
+      )}
+      {editBooking && (
+        <BookingFormModal
+          onClose={() => setEditBooking(null)}
+          rooms={props.rooms}
+          booking={editBooking}
         />
       )}
     </div>

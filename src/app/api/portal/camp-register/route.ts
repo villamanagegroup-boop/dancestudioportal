@@ -1,5 +1,6 @@
-import { createClient } from '@/lib/supabase/server'
+import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getParentPortalSettings } from '@/lib/portal-settings'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -8,24 +9,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'camp_id and student_id are required' }, { status: 400 })
   }
 
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+  // Act as the effective guardian — a real parent, or the family the owner/admin
+  // is currently viewing-as.
+  const viewer = await getPortalViewer('g')
+  const guardianId = viewer.effectiveId
+  if (!guardianId) {
     return NextResponse.json({ error: 'Not signed in' }, { status: 401 })
   }
 
-  // Verify the signed-in guardian actually owns this student
-  const { data: link } = await supabase
+  const admin = createAdminClient()
+
+  const { data: link } = await admin
     .from('guardian_students')
     .select('id')
-    .eq('guardian_id', user.id)
+    .eq('guardian_id', guardianId)
     .eq('student_id', student_id)
     .maybeSingle()
   if (!link) {
-    return NextResponse.json({ error: 'That student is not on your account' }, { status: 403 })
+    return NextResponse.json({ error: 'That student is not on this account' }, { status: 403 })
   }
-
-  const admin = createAdminClient()
 
   const { data: camp } = await admin
     .from('camps')
@@ -50,30 +52,50 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'This student is already registered' }, { status: 409 })
   }
 
-  const { count } = await admin
+  // Settings-driven: auto_approve OFF → pending until staff confirm; camp_allow_full
+  // OFF → a full camp is rejected. Owner viewing-as is always tentative (pending).
+  const settings = await getParentPortalSettings()
+  const tentative = viewer.isPreview
+
+  let status: string
+  let waitlistPosition: number | null = null
+  let waitlisted = false
+  let pending = false
+
+  const { count: registeredCount } = await admin
     .from('camp_registrations')
     .select('*', { count: 'exact', head: true })
     .eq('camp_id', camp_id)
     .eq('status', 'registered')
+  const full = (registeredCount ?? 0) >= (camp.max_capacity ?? 0)
 
-  const isFull = (count ?? 0) >= (camp.max_capacity ?? 0)
-  let waitlistPosition: number | null = null
-  if (isFull) {
+  if (tentative || !settings.auto_approve) {
+    status = 'pending'
+    pending = true
+  } else if (full) {
+    if (!settings.camp_allow_full) {
+      return NextResponse.json({ error: 'This camp is full.' }, { status: 409 })
+    }
     const { count: wl } = await admin
       .from('camp_registrations')
       .select('*', { count: 'exact', head: true })
       .eq('camp_id', camp_id)
       .eq('status', 'waitlisted')
     waitlistPosition = (wl ?? 0) + 1
+    waitlisted = true
+    status = 'waitlisted'
+  } else {
+    status = 'registered'
   }
 
   const { error } = await admin.from('camp_registrations').insert({
     camp_id,
     student_id,
-    status: isFull ? 'waitlisted' : 'registered',
+    status,
     waitlist_position: waitlistPosition,
+    notes: pending ? (tentative ? 'Tentative — added by studio, pending confirmation' : 'Pending studio approval') : null,
   })
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  return NextResponse.json({ ok: true, waitlisted: isFull }, { status: 201 })
+  return NextResponse.json({ ok: true, pending, waitlisted }, { status: 201 })
 }
