@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { stripe } from '@/lib/stripe'
 import { logActivity } from '@/lib/activity'
+import { requireStaff } from '@/lib/require-staff'
 
 export async function GET() {
   const supabase = await createClient()
@@ -16,6 +17,8 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const auth = await requireStaff()
+  if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status })
   const supabase = createAdminClient()
   const body = await request.json()
 

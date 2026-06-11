@@ -1,10 +1,13 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { requireStaff } from '@/lib/require-staff'
 
 const INVOICE_FIELDS = ['description', 'amount', 'due_date', 'invoice_type', 'status', 'notes', 'student_id'] as const
 const NULLABLE_WHEN_BLANK = new Set(['due_date', 'notes', 'student_id'])
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireStaff()
+  if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status })
   const { id } = await params
   const body = await req.json()
   const supabase = createAdminClient()
@@ -45,6 +48,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireStaff()
+  if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status })
   const { id } = await params
   const supabase = createAdminClient()
   await supabase.from('payments').delete().eq('invoice_id', id)

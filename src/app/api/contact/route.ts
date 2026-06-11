@@ -2,10 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivity } from '@/lib/activity'
 import { notify } from '@/lib/notify'
+import { rateLimit, clientIp } from '@/lib/rate-limit'
 
 // POST /api/contact — public contact form from the login screen. Lands in the
 // admin Intake inbox (site_intake) and pings the notification bell. No auth.
 export async function POST(req: NextRequest) {
+  const rl = rateLimit(`contact:${clientIp(req)}`, 5, 10 * 60 * 1000)
+  if (!rl.ok) {
+    return NextResponse.json(
+      { error: 'Too many messages — please try again in a few minutes.' },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfter) } },
+    )
+  }
+
   const body = await req.json().catch(() => ({})) as Record<string, unknown>
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   const email = typeof body.email === 'string' ? body.email.trim() : ''

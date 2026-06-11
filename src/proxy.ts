@@ -105,9 +105,13 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Run on everything except Next internals and static asset files (so public
-  // images/fonts/etc. aren't caught by the admin-page gate).
   matcher: [
+    // Pages: everything except Next internals and static asset files (so public
+    // images/fonts/etc. aren't caught by the admin-page gate).
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|json|txt|xml|woff|woff2|ttf|otf|map|pdf)$).*)',
+    // API: ALWAYS gate, even paths that end in a static-looking extension
+    // (e.g. /api/students/123.json) — otherwise the asset exclusion above would
+    // let a crafted request skip the auth proxy and hit the route directly.
+    '/api/:path*',
   ],
 }

@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { logActivity } from '@/lib/activity'
+import { requireStaff } from '@/lib/require-staff'
 
 const INSTRUCTOR_FIELDS = [
   'first_name', 'last_name', 'email', 'phone', 'bio', 'specialties',
@@ -13,6 +14,8 @@ const NULLABLE_WHEN_BLANK = new Set([
 ])
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireStaff()
+  if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status })
   const { id } = await params
   const body = await req.json()
   const supabase = createAdminClient()
@@ -45,6 +48,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireStaff()
+  if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status })
   const { id } = await params
   const supabase = createAdminClient()
   const { data: before } = await supabase

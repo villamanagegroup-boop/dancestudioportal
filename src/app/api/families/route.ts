@@ -1,8 +1,11 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
 import { logActivity } from '@/lib/activity'
+import { requireStaff } from '@/lib/require-staff'
 
 export async function POST(req: NextRequest) {
+  const auth = await requireStaff()
+  if (!auth.ok) return NextResponse.json({ error: auth.message }, { status: auth.status })
   const { first_name, last_name, email, phone } = await req.json()
 
   if (!first_name || !last_name || !email) {
