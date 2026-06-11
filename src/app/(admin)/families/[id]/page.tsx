@@ -165,7 +165,7 @@ export default async function FamilyDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={`${profile.first_name} ${profile.last_name}`} subtitle="Family account" />
+      <Header title={`${profile.first_name} ${profile.last_name}`} subtitle="Family account" back="/families" />
       <div className="p-6 space-y-6">
         <FamilyTabs
           profile={familyProfile}

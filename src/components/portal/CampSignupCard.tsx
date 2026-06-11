@@ -52,7 +52,13 @@ export default function CampSignupCard({ camp, students }: Props) {
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.error ?? 'Could not register')
-      setDone(json.pending ? 'Request sent — pending studio approval' : json.waitlisted ? 'Added to the waitlist' : 'Registered!')
+      setDone(
+        json.outOfParams
+          ? `Request sent — this dancer is ${(json.reasons ?? []).join(' and ') || 'outside the camp age range'}, so the studio will review it.`
+          : json.pending ? 'Request sent — pending studio approval'
+          : json.waitlisted ? 'Added to the waitlist'
+          : 'Registered!',
+      )
       setStudentId('')
       router.refresh()
     } catch (err: any) {

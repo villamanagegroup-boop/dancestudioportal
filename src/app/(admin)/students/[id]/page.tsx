@@ -60,7 +60,7 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={`${student.first_name} ${student.last_name}`} subtitle="Dancer profile" />
+      <Header title={`${student.first_name} ${student.last_name}`} subtitle="Dancer profile" back="/students" />
       <div className="p-6">
         <StudentTabs
           student={student as any}

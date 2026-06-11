@@ -54,7 +54,7 @@ export default async function ClassDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={cls.name} subtitle={`${cls.class_type?.style ?? ''} · ${cls.season?.name ?? 'Standalone'}`} />
+      <Header title={cls.name} subtitle={`${cls.class_type?.style ?? ''} · ${cls.season?.name ?? 'Standalone'}`} back="/classes" />
       <div className="p-6">
         <ClassDetail
           cls={cls}

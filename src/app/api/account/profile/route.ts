@@ -10,6 +10,7 @@ const READABLE = [
   'secondary_email', 'secondary_phone',
   'address_street', 'address_city', 'address_state', 'address_zip',
   'email_opt_in', 'sms_opt_in', 'role',
+  'job_title', 'bio', 'photo_url',
 ] as const
 
 const EDITABLE = [
@@ -17,6 +18,7 @@ const EDITABLE = [
   'secondary_email', 'secondary_phone',
   'address_street', 'address_city', 'address_state', 'address_zip',
   'email_opt_in', 'sms_opt_in',
+  'job_title', 'bio', 'photo_url',
 ] as const
 
 const BOOLEAN_FIELDS = new Set(['email_opt_in', 'sms_opt_in'])

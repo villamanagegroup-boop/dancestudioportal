@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { logActivity } from '@/lib/activity'
 
 export async function POST(req: NextRequest) {
   const { first_name, last_name, email, phone } = await req.json()
@@ -36,6 +37,14 @@ export async function POST(req: NextRequest) {
     await supabase.auth.admin.deleteUser(userId)
     return NextResponse.json({ error: profileError.message }, { status: 400 })
   }
+
+  await logActivity({
+    action: 'family.created',
+    targetTable: 'profiles',
+    targetId: userId,
+    targetLabel: `${first_name} ${last_name}`.trim() || null,
+    metadata: { email },
+  }, supabase)
 
   return NextResponse.json({ id: userId })
 }

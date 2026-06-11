@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createAccountInvite } from '@/lib/invites'
 import { parseSubmitterName, detectDancer, detectPhone } from '@/lib/intake'
+import { logActivity } from '@/lib/activity'
 
 async function requireAdmin() {
   const supabase = await createClient()
@@ -42,6 +43,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .eq('id', id)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+    await logActivity({
+      action: 'intake.dismissed',
+      targetTable: 'site_intake',
+      targetId: id,
+    }, ctx.admin)
+
     return NextResponse.json({ ok: true })
   }
 
@@ -68,6 +76,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .eq('id', id)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+    await logActivity({
+      action: 'intake.matched',
+      targetTable: 'site_intake',
+      targetId: id,
+      metadata: { profile_id, student_ids },
+    }, ctx.admin)
+
     return NextResponse.json({ ok: true })
   }
 
@@ -155,6 +171,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       })
       .eq('id', id)
     if (updErr) return NextResponse.json({ error: updErr.message }, { status: 400 })
+
+    await logActivity({
+      action: 'intake.converted',
+      targetTable: 'site_intake',
+      targetId: id,
+      targetLabel: `${first_name} ${last_name || ''}`.trim() || email,
+      metadata: { email, dancerCreated: !!dancer, source_form: row.source_form },
+    }, ctx.admin)
 
     return NextResponse.json({
       ok: true,

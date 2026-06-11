@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ChevronUp, ChevronDown, Plus, Search, Pencil, ShieldAlert, ShieldCheck, Mail } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { ROLE_LABELS, isStaffRole } from '@/lib/permissions'
+import { formatStaffId } from '@/lib/ids'
 import RowActions from '@/components/admin/RowActions'
 import StaffFormModal from '@/components/forms/StaffFormModal'
 import InviteAccountModal from '@/components/forms/InviteAccountModal'
@@ -23,6 +24,7 @@ interface Instructor {
   pay_rate: number | null
   pay_type: string | null
   staff_role: string | null
+  staff_no: number | null
   background_check_date: string | null
   background_check_expires: string | null
   active: boolean
@@ -58,7 +60,7 @@ function SortBtn({ col, label, activeKey, dir, onToggle }: {
   )
 }
 
-export default function StaffGrid({ instructors }: { instructors: Instructor[] }) {
+export default function StaffGrid({ instructors, studioCode }: { instructors: Instructor[]; studioCode: string }) {
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [query, setQuery] = useState('')
@@ -193,6 +195,9 @@ export default function StaffGrid({ instructors }: { instructors: Instructor[] }
                       )}
                     </h3>
                     <p className="text-sm text-gray-500 mt-0.5">{instructor.email}</p>
+                    {instructor.staff_no != null && (
+                      <p className="text-[11px] font-mono text-gray-400 mt-0.5">{formatStaffId(instructor.staff_no, studioCode)}</p>
+                    )}
                     <span className="inline-block mt-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-studio-50 text-studio-700">
                       {isStaffRole(instructor.staff_role) ? ROLE_LABELS[instructor.staff_role] : 'Instructor'}
                     </span>

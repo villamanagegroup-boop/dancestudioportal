@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEnrollmentConfirmation } from '@/lib/resend'
 import { formatDate } from '@/lib/utils'
 import { NextRequest, NextResponse } from 'next/server'
+import { logActivity } from '@/lib/activity'
 
 const VALID_STATUS = ['active', 'waitlisted', 'dropped', 'completed', 'pending']
 
@@ -68,6 +69,23 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
+  {
+    const { data: student } = await supabase
+      .from('students').select('first_name, last_name').eq('id', current.student_id).maybeSingle()
+    const studentName = student ? `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || null : null
+    const statusChanged = body.status !== undefined && body.status !== current.status
+    await logActivity({
+      action: statusChanged ? `enrollment.${body.status}` : 'enrollment.updated',
+      targetTable: 'enrollments',
+      targetId: id,
+      targetLabel: studentName,
+      metadata: {
+        fields: Object.keys(patch),
+        ...(statusChanged ? { from: current.status, to: body.status } : {}),
+      },
+    }, supabase)
+  }
+
   // Best-effort confirmation email when promoting onto the roster
   const promotedToActive = body.status === 'active' && current.status !== 'active'
   if (promotedToActive) {
@@ -109,7 +127,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = createAdminClient()
+  const { data: before } = await supabase
+    .from('enrollments')
+    .select('student:students(first_name, last_name)')
+    .eq('id', id)
+    .maybeSingle()
   const { error } = await supabase.from('enrollments').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  const s = (before?.student as { first_name?: string; last_name?: string } | null) ?? null
+  await logActivity({
+    action: 'enrollment.deleted',
+    targetTable: 'enrollments',
+    targetId: id,
+    targetLabel: s ? `${s.first_name ?? ''} ${s.last_name ?? ''}`.trim() || null : null,
+  }, supabase)
+
   return NextResponse.json({ ok: true })
 }

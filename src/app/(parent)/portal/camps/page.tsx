@@ -1,7 +1,7 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { getParentPortalSettings } from '@/lib/portal-settings'
 import { formatDate, cn } from '@/lib/utils'
-import CampSignupCard from '@/components/portal/CampSignupCard'
+import PortalCampBrowser from '@/components/portal/PortalCampBrowser'
 import SectionHead from '@/components/admin/SectionHead'
 
 const STATUS_TAG: Record<string, string> = {
@@ -125,31 +125,22 @@ export default async function ParentCampsPage() {
       {!availableCamps?.length ? (
         <p className="muted" style={{ fontSize: 13 }}>No camps open for registration right now.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {availableCamps.map(c => {
-            const spotsLeft =
-              c.max_capacity != null
-                ? Math.max(0, c.max_capacity - (registeredCounts[c.id] ?? 0))
-                : null
-            return (
-              <CampSignupCard
-                key={c.id}
-                camp={{
-                  id: c.id,
-                  name: c.name,
-                  description: c.description,
-                  start_date: c.start_date,
-                  end_date: c.end_date,
-                  price: Number(c.price),
-                  age_min: c.age_min,
-                  age_max: c.age_max,
-                  spotsLeft,
-                }}
-                students={students}
-              />
-            )
-          })}
-        </div>
+        <PortalCampBrowser
+          camps={(availableCamps as any[]).map(c => ({
+            id: c.id,
+            name: c.name,
+            description: c.description,
+            start_date: c.start_date,
+            end_date: c.end_date,
+            price: Number(c.price),
+            age_min: c.age_min,
+            age_max: c.age_max,
+            spotsLeft: c.max_capacity != null
+              ? Math.max(0, c.max_capacity - (registeredCounts[c.id] ?? 0))
+              : null,
+          }))}
+          students={students}
+        />
       )}
     </div>
   )

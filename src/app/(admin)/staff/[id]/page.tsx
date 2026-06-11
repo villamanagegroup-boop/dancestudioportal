@@ -5,6 +5,7 @@ import StaffEditButton from '@/components/admin/StaffEditButton'
 import StaffPermissionsPanel from '@/components/admin/StaffPermissionsPanel'
 import RolesPanel from '@/components/admin/RolesPanel'
 import { formatDate, formatTime } from '@/lib/utils'
+import { getStudioCode, formatStaffId } from '@/lib/ids'
 
 function bgCheckBadge(expires: string | null) {
   if (!expires) return { label: 'No background check on file', cls: 'bg-gray-100 text-gray-500' }
@@ -18,12 +19,13 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
   const { id } = await params
   const supabase = createAdminClient()
 
-  const [{ data: instructor }, { data: classes }] = await Promise.all([
+  const [{ data: instructor }, { data: classes }, code] = await Promise.all([
     supabase.from('instructors').select('*').eq('id', id).single(),
     supabase.from('classes').select(`
       id, name, day_of_week, start_time, end_time, max_students,
       class_type:class_types(style, color)
     `).eq('instructor_id', id).eq('active', true),
+    getStudioCode(),
   ])
 
   if (!instructor) notFound()
@@ -32,7 +34,7 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={`${instructor.first_name} ${instructor.last_name}`} subtitle="Instructor profile" />
+      <Header title={`${instructor.first_name} ${instructor.last_name}`} subtitle="Instructor profile" back="/staff" />
       <div className="flex-1 overflow-y-auto">
         <div className="page-gutter min-h-full">
           <div className="glass glass-page min-h-full space-y-6">
@@ -52,6 +54,9 @@ export default async function StaffDetailPage({ params }: { params: Promise<{ id
               )}
             </h2>
             <p className="text-sm text-gray-500">{instructor.email}</p>
+            {instructor.staff_no != null && (
+              <p className="text-xs font-mono text-gray-400 mt-0.5">Staff ID · {formatStaffId(instructor.staff_no, code)}</p>
+            )}
             {instructor.phone && <p className="text-sm text-gray-500">{instructor.phone}</p>}
             {instructor.bio && <p className="text-sm text-gray-600 mt-3">{instructor.bio}</p>}
             {instructor.specialties?.length > 0 && (

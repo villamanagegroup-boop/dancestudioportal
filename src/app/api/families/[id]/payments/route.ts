@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { logActivity } from '@/lib/activity'
+import { notify } from '@/lib/notify'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -37,6 +39,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     action: 'payment_recorded',
     meta: { payment_id: payment.id, amount: num, invoice_id: invoice_id ?? null },
   })
+
+  const { data: guardian } = await supabase
+    .from('profiles').select('first_name, last_name').eq('id', id).maybeSingle()
+  const guardianName = guardian ? `${guardian.first_name ?? ''} ${guardian.last_name ?? ''}`.trim() || null : null
+  await logActivity({
+    action: 'payment.recorded',
+    targetTable: 'payments',
+    targetId: payment.id,
+    targetLabel: guardianName,
+    metadata: { amount: num, invoice_id: invoice_id ?? null, guardian_id: id },
+  }, supabase)
+
+  await notify({
+    type: 'payment.recorded',
+    title: 'Payment received',
+    body: `${guardianName ?? 'A family'} · $${num.toFixed(2)}`,
+    href: `/families/${id}`,
+    metadata: { amount: num, guardian_id: id, invoice_id: invoice_id ?? null },
+  }, supabase)
 
   return NextResponse.json({ ok: true, payment_id: payment.id })
 }

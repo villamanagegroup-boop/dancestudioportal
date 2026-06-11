@@ -52,7 +52,13 @@ export default function ClassEnrollCard({ cls, students }: Props) {
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.error ?? 'Could not enroll')
-      setDone(json.pending ? 'Request sent — pending studio approval' : json.waitlisted ? 'Added to the waitlist' : 'Enrolled!')
+      setDone(
+        json.outOfParams
+          ? `Request sent — this dancer is ${(json.reasons ?? []).join(' and ') || 'outside the class parameters'}, so the studio will review it.`
+          : json.pending ? 'Request sent — pending studio approval'
+          : json.waitlisted ? 'Added to the waitlist'
+          : 'Enrolled!',
+      )
       setStudentId('')
       router.refresh()
     } catch (err: any) {

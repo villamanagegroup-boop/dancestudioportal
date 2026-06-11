@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivity } from '@/lib/activity'
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient()
@@ -48,6 +49,13 @@ export async function POST(request: NextRequest) {
     await supabase.from('students').delete().eq('id', data.id)
     return NextResponse.json({ error: linkError.message }, { status: 400 })
   }
+
+  await logActivity({
+    action: 'student.created',
+    targetTable: 'students',
+    targetId: data.id,
+    targetLabel: `${data.first_name ?? ''} ${data.last_name ?? ''}`.trim() || null,
+  }, supabase)
 
   return NextResponse.json(data, { status: 201 })
 }

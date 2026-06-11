@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { UserPlus, Trash2 } from 'lucide-react'
 import { formatDate, formatAge, getEnrollmentStatusColor, cn } from '@/lib/utils'
 import type { Enrollment } from '@/components/admin/ClassDetail'
@@ -114,7 +115,13 @@ export default function ClassRosterTab({ classId, enrollments, students }: Props
               const name = e.student ? `${e.student.first_name} ${e.student.last_name}` : '—'
               return (
                 <tr key={e.id} className="hover:bg-gray-50">
-                  <td className="px-5 py-3 text-sm font-medium text-gray-900">{name}</td>
+                  <td className="px-5 py-3 text-sm font-medium text-gray-900">
+                    {e.student ? (
+                      <Link href={`/students/${e.student.id}`} className="hover:text-studio-700 hover:underline">
+                        {name}
+                      </Link>
+                    ) : name}
+                  </td>
                   <td className="px-5 py-3 text-sm text-gray-600">
                     {e.student ? formatAge(e.student.date_of_birth) : '—'}
                   </td>

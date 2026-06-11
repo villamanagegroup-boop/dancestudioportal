@@ -46,7 +46,7 @@ export default async function CampDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={camp.name} subtitle="Camp details" />
+      <Header title={camp.name} subtitle="Camp details" back="/camps" />
       <div className="p-6">
         <CampDetail
           camp={camp}

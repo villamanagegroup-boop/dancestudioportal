@@ -1,16 +1,24 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { LogOut, Bell, Search } from 'lucide-react'
+import Link from 'next/link'
+import { LogOut, Search, ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import ThemeSwitcher from '@/components/ui/ThemeSwitcher'
+import NotificationBell from '@/components/admin/NotificationBell'
 
 interface HeaderProps {
   title: string
   subtitle?: string
+  /**
+   * Render a back control before the title. Pass an href string to navigate to
+   * a specific parent page (preferred — predictable), or `true` to use the
+   * browser's history (router.back()).
+   */
+  back?: string | boolean
 }
 
-export default function Header({ title, subtitle }: HeaderProps) {
+export default function Header({ title, subtitle, back }: HeaderProps) {
   const router = useRouter()
 
   async function handleSignOut() {
@@ -19,8 +27,24 @@ export default function Header({ title, subtitle }: HeaderProps) {
     router.push('/login')
   }
 
+  const backBtnClass = 'icon-btn flex-shrink-0'
+  const backTitle = 'Back'
+
   return (
     <header className="h-16 bg-transparent flex items-center gap-4 px-6 flex-shrink-0 relative z-10 pl-16 md:pl-6">
+      {back != null && back !== false && (
+        typeof back === 'string'
+          ? (
+            <Link href={back} className={backBtnClass} title={backTitle} aria-label={backTitle}>
+              <ArrowLeft size={16} />
+            </Link>
+          )
+          : (
+            <button onClick={() => router.back()} className={backBtnClass} title={backTitle} aria-label={backTitle}>
+              <ArrowLeft size={16} />
+            </button>
+          )
+      )}
       <div className="min-w-0 flex-shrink-0">
         <h1 className="text-lg font-semibold" style={{ color: 'var(--ink-1)' }}>{title}</h1>
         {subtitle && <p className="text-sm hidden sm:block" style={{ color: 'var(--ink-3)' }}>{subtitle}</p>}
@@ -56,16 +80,7 @@ export default function Header({ title, subtitle }: HeaderProps) {
 
       <div className="flex items-center gap-2 ml-auto">
         <ThemeSwitcher />
-        <button className="icon-btn" title="Notifications">
-          <Bell size={16} />
-          <span
-            style={{
-              position: 'absolute', top: 9, right: 10, width: 7, height: 7, borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--grad-3), var(--grad-1))',
-              boxShadow: '0 0 0 2px var(--glass-thin)',
-            }}
-          />
-        </button>
+        <NotificationBell />
         <button onClick={handleSignOut} className="icon-btn" title="Sign out">
           <LogOut size={16} />
         </button>

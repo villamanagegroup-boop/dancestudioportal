@@ -1,6 +1,9 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getParentPortalSettings } from '@/lib/portal-settings'
+import { logActivity } from '@/lib/activity'
+import { notify } from '@/lib/notify'
+import { checkEligibility } from '@/lib/eligibility'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
 
   const { data: camp } = await admin
     .from('camps')
-    .select('id, max_capacity, active, registration_open')
+    .select('id, name, max_capacity, active, registration_open, age_min, age_max')
     .eq('id', camp_id)
     .single()
   if (!camp) {
@@ -40,6 +43,12 @@ export async function POST(req: NextRequest) {
   if (!camp.active || !camp.registration_open) {
     return NextResponse.json({ error: 'Registration is closed for this camp' }, { status: 400 })
   }
+
+  // Outside the camp's age range → forced to a pending request for staff review.
+  const { data: dancer } = await admin
+    .from('students').select('date_of_birth, gender').eq('id', student_id).maybeSingle()
+  const eligibility = checkEligibility(dancer ?? {}, camp)
+  const outOfParams = !eligibility.fits
 
   const { data: existing } = await admin
     .from('camp_registrations')
@@ -69,7 +78,7 @@ export async function POST(req: NextRequest) {
     .eq('status', 'registered')
   const full = (registeredCount ?? 0) >= (camp.max_capacity ?? 0)
 
-  if (tentative || !settings.auto_approve) {
+  if (tentative || !settings.auto_approve || outOfParams) {
     status = 'pending'
     pending = true
   } else if (full) {
@@ -88,14 +97,40 @@ export async function POST(req: NextRequest) {
     status = 'registered'
   }
 
-  const { error } = await admin.from('camp_registrations').insert({
+  const { data: registration, error } = await admin.from('camp_registrations').insert({
     camp_id,
     student_id,
     status,
     waitlist_position: waitlistPosition,
-    notes: pending ? (tentative ? 'Tentative — added by studio, pending confirmation' : 'Pending studio approval') : null,
-  })
+    notes: pending
+      ? outOfParams
+        ? `Request — dancer is ${eligibility.reasons.join(' and ')}. Pending studio approval.`
+        : (tentative ? 'Tentative — added by studio, pending confirmation' : 'Pending studio approval')
+      : null,
+  }).select('id').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  return NextResponse.json({ ok: true, pending, waitlisted }, { status: 201 })
+  if (!tentative) {
+    const { data: student } = await admin
+      .from('students').select('first_name, last_name').eq('id', student_id).maybeSingle()
+    const studentName = student ? `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || null : null
+    await logActivity({
+      action: pending ? 'camp_registration.requested' : 'camp_registration.created',
+      targetTable: 'camp_registrations',
+      targetId: registration.id,
+      targetLabel: studentName && camp.name ? `${studentName} → ${camp.name}` : studentName,
+      metadata: { camp_id, student_id, status, source: 'parent_portal' },
+    }, admin)
+    await notify({
+      type: pending ? 'camp_registration.requested' : 'camp_registration.created',
+      title: pending ? 'New camp request' : waitlisted ? 'New camp waitlist' : 'New camp registration',
+      body: studentName && camp.name
+        ? `${studentName} → ${camp.name}${outOfParams ? ` · ${eligibility.reasons.join(', ')}` : pending ? ' · needs approval' : ''}`
+        : 'A parent registered a dancer for a camp',
+      href: `/camps/${camp_id}`,
+      metadata: { camp_id, student_id, status, outOfParams },
+    }, admin)
+  }
+
+  return NextResponse.json({ ok: true, pending, waitlisted, outOfParams, reasons: eligibility.reasons }, { status: 201 })
 }

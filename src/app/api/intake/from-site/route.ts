@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { logActivity } from '@/lib/activity'
+import { notify } from '@/lib/notify'
 
 // Map a site-Supabase table name to the friendly form-type slug we store on
 // site_intake. Add a row here when a new public-site form table is wired up
@@ -101,6 +103,24 @@ export async function POST(req: NextRequest) {
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  const who = pickName(record, source_form) ?? pickEmail(record)
+  await logActivity({
+    action: 'intake.received',
+    targetTable: 'site_intake',
+    targetId: data.id,
+    targetLabel: who,
+    metadata: { source_form, source_table: table },
+    system: true,
+  }, admin)
+
+  await notify({
+    type: 'intake.received',
+    title: 'New site submission',
+    body: who ? `${who} · ${source_form.replace(/_/g, ' ')}` : `New ${source_form.replace(/_/g, ' ')} form`,
+    href: '/intake',
+    metadata: { intake_id: data.id, source_form },
+  }, admin)
 
   return NextResponse.json({ ok: true, id: data.id }, { status: 201 })
 }

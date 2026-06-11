@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { logActivity } from '@/lib/activity'
 
 const INSTRUCTOR_FIELDS = [
   'first_name', 'last_name', 'email', 'phone', 'bio', 'specialties',
@@ -29,13 +30,34 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { error } = await supabase.from('instructors').update(update).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  const { data: instr } = await supabase
+    .from('instructors').select('first_name, last_name').eq('id', id).maybeSingle()
+  await logActivity({
+    action: 'staff.updated',
+    targetTable: 'instructors',
+    targetId: id,
+    targetLabel: instr ? `${instr.first_name ?? ''} ${instr.last_name ?? ''}`.trim() || null : null,
+    metadata: { fields: Object.keys(update) },
+  }, supabase)
+
   return NextResponse.json({ ok: true })
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = createAdminClient()
+  const { data: before } = await supabase
+    .from('instructors').select('first_name, last_name').eq('id', id).maybeSingle()
   const { error } = await supabase.from('instructors').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  await logActivity({
+    action: 'staff.deleted',
+    targetTable: 'instructors',
+    targetId: id,
+    targetLabel: before ? `${before.first_name ?? ''} ${before.last_name ?? ''}`.trim() || null : null,
+  }, supabase)
+
   return NextResponse.json({ ok: true })
 }

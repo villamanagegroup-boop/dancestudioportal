@@ -41,7 +41,7 @@ export default async function PartyDetailPage({ params }: { params: Promise<{ id
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={party.contact_name || 'Event'} subtitle="Party & event details" />
+      <Header title={party.contact_name || 'Event'} subtitle="Party & event details" back="/parties" />
       <div className="p-6">
         <PartyDetail
           party={party}

@@ -1,6 +1,9 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getParentPortalSettings } from '@/lib/portal-settings'
+import { logActivity } from '@/lib/activity'
+import { notify } from '@/lib/notify'
+import { checkEligibility } from '@/lib/eligibility'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
@@ -31,7 +34,7 @@ export async function POST(req: NextRequest) {
 
   const { data: cls } = await admin
     .from('classes')
-    .select('id, season_id, max_students, active, registration_open, internal_registration_only')
+    .select('id, name, season_id, max_students, active, registration_open, internal_registration_only, age_min, age_max, gender')
     .eq('id', class_id)
     .single()
   if (!cls) {
@@ -40,6 +43,14 @@ export async function POST(req: NextRequest) {
   if (!cls.active || !cls.registration_open || cls.internal_registration_only) {
     return NextResponse.json({ error: 'This class is not open for registration' }, { status: 400 })
   }
+
+  // Does the dancer fall within the class's age/gender parameters? If not, the
+  // registration is forced to a pending "request" for staff to review — even if
+  // the studio normally auto-approves portal enrollments.
+  const { data: dancer } = await admin
+    .from('students').select('date_of_birth, gender').eq('id', student_id).maybeSingle()
+  const eligibility = checkEligibility(dancer ?? {}, cls)
+  const outOfParams = !eligibility.fits
 
   const { data: existing } = await admin
     .from('enrollments')
@@ -71,7 +82,7 @@ export async function POST(req: NextRequest) {
     .eq('status', 'active')
   const full = (activeCount ?? 0) >= (cls.max_students ?? 0)
 
-  if (tentative || !settings.auto_approve) {
+  if (tentative || !settings.auto_approve || outOfParams) {
     status = 'pending'
     pending = true
   } else if (full) {
@@ -90,15 +101,43 @@ export async function POST(req: NextRequest) {
     status = 'active'
   }
 
-  const { error } = await admin.from('enrollments').insert({
+  const { data: enrollment, error } = await admin.from('enrollments').insert({
     class_id,
     student_id,
     season_id: cls.season_id,
     status,
     waitlist_position: waitlistPosition,
-    notes: pending ? (tentative ? 'Tentative — added by studio, pending confirmation' : 'Pending studio approval') : null,
-  })
+    notes: pending
+      ? outOfParams
+        ? `Request — dancer is ${eligibility.reasons.join(' and ')}. Pending studio approval.`
+        : (tentative ? 'Tentative — added by studio, pending confirmation' : 'Pending studio approval')
+      : null,
+  }).select('id').single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
 
-  return NextResponse.json({ ok: true, pending, waitlisted }, { status: 201 })
+  // Notify staff + log it — a parent-initiated enrollment (skip when the studio
+  // is just adding it themselves while viewing-as).
+  if (!tentative) {
+    const { data: student } = await admin
+      .from('students').select('first_name, last_name').eq('id', student_id).maybeSingle()
+    const studentName = student ? `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() || null : null
+    await logActivity({
+      action: pending ? 'enrollment.requested' : 'enrollment.created',
+      targetTable: 'enrollments',
+      targetId: enrollment.id,
+      targetLabel: studentName && cls.name ? `${studentName} → ${cls.name}` : studentName,
+      metadata: { class_id, student_id, status, source: 'parent_portal' },
+    }, admin)
+    await notify({
+      type: pending ? 'enrollment.requested' : 'enrollment.created',
+      title: pending ? 'New enrollment request' : waitlisted ? 'New waitlist entry' : 'New enrollment',
+      body: studentName && cls.name
+        ? `${studentName} → ${cls.name}${outOfParams ? ` · ${eligibility.reasons.join(', ')}` : pending ? ' · needs approval' : ''}`
+        : 'A parent registered a dancer',
+      href: pending ? '/enrollments' : `/classes/${class_id}`,
+      metadata: { class_id, student_id, status, outOfParams },
+    }, admin)
+  }
+
+  return NextResponse.json({ ok: true, pending, waitlisted, outOfParams, reasons: eligibility.reasons }, { status: 201 })
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { stripe } from '@/lib/stripe'
+import { logActivity } from '@/lib/activity'
 
 export async function GET() {
   const supabase = await createClient()
@@ -45,5 +46,13 @@ export async function POST(request: NextRequest) {
   }).select().single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  await logActivity({
+    action: 'class.created',
+    targetTable: 'classes',
+    targetId: data.id,
+    targetLabel: data.name ?? null,
+  }, supabase)
+
   return NextResponse.json(data, { status: 201 })
 }

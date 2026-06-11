@@ -27,3 +27,8 @@ export function formatFamilyId(familyNo: number | null | undefined, code: string
 export function formatMemberId(memberNo: number | null | undefined): string {
   return memberNo == null ? '—' : String(memberNo)
 }
+
+// Staff ID, e.g. CCDS1001. The "S" distinguishes it from a family ID (CCD1042).
+export function formatStaffId(staffNo: number | null | undefined, code: string): string {
+  return staffNo == null ? '—' : `${code}S${staffNo}`
+}

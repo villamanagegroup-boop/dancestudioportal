@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { logActivity } from '@/lib/activity'
 
 const CAMP_FIELDS = [
   'name', 'description', 'start_date', 'end_date', 'start_time', 'end_time',
@@ -34,13 +35,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { error } = await supabase.from('camps').update(update).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  const { data: camp } = await supabase.from('camps').select('name').eq('id', id).maybeSingle()
+  await logActivity({
+    action: 'camp.updated',
+    targetTable: 'camps',
+    targetId: id,
+    targetLabel: camp?.name ?? null,
+    metadata: { fields: Object.keys(update) },
+  }, supabase)
+
   return NextResponse.json({ ok: true })
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = createAdminClient()
+  const { data: before } = await supabase.from('camps').select('name').eq('id', id).maybeSingle()
   const { error } = await supabase.from('camps').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  await logActivity({
+    action: 'camp.deleted',
+    targetTable: 'camps',
+    targetId: id,
+    targetLabel: before?.name ?? null,
+  }, supabase)
+
   return NextResponse.json({ ok: true })
 }

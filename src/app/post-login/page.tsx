@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivity } from '@/lib/activity'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,14 @@ export default async function PostLoginPage({
     .select('id, role, email')
     .eq('id', user.id)
     .single()
+
+  await logActivity({
+    action: 'auth.signed_in',
+    targetTable: 'profiles',
+    targetId: user.id,
+    targetLabel: profile?.email ?? user.email ?? null,
+    metadata: { role: profile?.role ?? null },
+  }, admin)
 
   if (params.debug === '1') {
     return (

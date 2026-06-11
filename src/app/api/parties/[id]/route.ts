@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { logActivity } from '@/lib/activity'
 
 const PARTY_FIELDS = [
   'contact_name', 'contact_email', 'contact_phone',
@@ -34,13 +35,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const { error } = await supabase.from('parties').update(update).eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  const { data: party } = await supabase.from('parties').select('contact_name').eq('id', id).maybeSingle()
+  await logActivity({
+    action: 'party.updated',
+    targetTable: 'parties',
+    targetId: id,
+    targetLabel: party?.contact_name ?? null,
+    metadata: { fields: Object.keys(update) },
+  }, supabase)
+
   return NextResponse.json({ ok: true })
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = createAdminClient()
+  const { data: before } = await supabase.from('parties').select('contact_name').eq('id', id).maybeSingle()
   const { error } = await supabase.from('parties').delete().eq('id', id)
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  await logActivity({
+    action: 'party.deleted',
+    targetTable: 'parties',
+    targetId: id,
+    targetLabel: before?.contact_name ?? null,
+  }, supabase)
+
   return NextResponse.json({ ok: true })
 }

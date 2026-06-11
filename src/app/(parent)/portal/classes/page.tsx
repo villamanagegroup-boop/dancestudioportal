@@ -1,7 +1,7 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { getParentPortalSettings } from '@/lib/portal-settings'
 import { formatTime, cn } from '@/lib/utils'
-import ClassEnrollCard from '@/components/portal/ClassEnrollCard'
+import PortalClassBrowser from '@/components/portal/PortalClassBrowser'
 import SectionHead from '@/components/admin/SectionHead'
 
 const NO_ID = '00000000-0000-0000-0000-000000000000'
@@ -41,7 +41,7 @@ export default async function ParentClassesPage() {
       : Promise.resolve({ data: [] as any[] }),
     db.from('classes').select(`
       id, name, day_of_week, start_time, end_time, monthly_tuition, max_students,
-      class_type:class_types(color),
+      class_type:class_types(color, style),
       instructor:instructors(first_name, last_name)
     `)
       .eq('active', true)
@@ -116,33 +116,25 @@ export default async function ParentClassesPage() {
       {!availableClasses?.length ? (
         <p className="muted" style={{ fontSize: 13 }}>No classes open for registration right now.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {availableClasses.map((cls: any) => {
-            const spotsLeft =
-              cls.max_students != null
-                ? Math.max(0, cls.max_students - (activeCounts[cls.id] ?? 0))
-                : null
-            return (
-              <ClassEnrollCard
-                key={cls.id}
-                cls={{
-                  id: cls.id,
-                  name: cls.name,
-                  day_of_week: cls.day_of_week,
-                  start_time: cls.start_time,
-                  end_time: cls.end_time,
-                  monthly_tuition: settings.show_tuition ? Number(cls.monthly_tuition) : null,
-                  color: cls.class_type?.color ?? '#7c3aed',
-                  instructorName: settings.show_instructors && cls.instructor
-                    ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
-                    : null,
-                  spotsLeft,
-                }}
-                students={students}
-              />
-            )
-          })}
-        </div>
+        <PortalClassBrowser
+          classes={(availableClasses as any[]).map(cls => ({
+            id: cls.id,
+            name: cls.name,
+            day_of_week: cls.day_of_week,
+            start_time: cls.start_time,
+            end_time: cls.end_time,
+            monthly_tuition: settings.show_tuition ? Number(cls.monthly_tuition) : null,
+            color: cls.class_type?.color ?? '#7c3aed',
+            style: cls.class_type?.style ?? null,
+            instructorName: settings.show_instructors && cls.instructor
+              ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
+              : null,
+            spotsLeft: cls.max_students != null
+              ? Math.max(0, cls.max_students - (activeCounts[cls.id] ?? 0))
+              : null,
+          }))}
+          students={students}
+        />
       )}
     </div>
   )

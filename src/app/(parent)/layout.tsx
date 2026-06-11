@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Home, Calendar, CreditCard, FileText, Tent, Megaphone, LogOut, UserCircle, ShieldCheck } from 'lucide-react'
+import { Home, Calendar, CreditCard, FileText, Tent, Megaphone, LogOut, UserCircle, ShieldCheck, Sparkles } from 'lucide-react'
 import { getPortalViewer } from '@/lib/portal-viewer'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAvailablePortals } from '@/lib/portal-access'
@@ -13,6 +13,7 @@ const ALL_NAV = [
   { href: '/portal', icon: Home, iconKey: 'home', label: 'Home' },
   { href: '/portal/classes', icon: Calendar, iconKey: 'classes', label: 'Classes' },
   { href: '/portal/camps', icon: Tent, iconKey: 'camps', label: 'Camps' },
+  { href: '/portal/events', icon: Sparkles, iconKey: 'events', label: 'Events' },
   { href: '/portal/billing', icon: CreditCard, iconKey: 'billing', label: 'Billing' },
   { href: '/portal/documents', icon: FileText, iconKey: 'documents', label: 'Documents' },
   { href: '/portal/policies', icon: ShieldCheck, iconKey: 'policies', label: 'Policies' },
@@ -58,9 +59,9 @@ export default async function ParentLayout({ children }: { children: React.React
             <Logo size={28} rounded={8} />
             <span className="font-semibold text-gray-900 text-sm">Capital Core</span>
           </div>
-          <nav className="hidden sm:flex items-center gap-1">
+          <nav className="hidden sm:flex flex-1 items-center justify-center gap-1 lg:gap-2 px-4 lg:px-8">
             {navItems.map(({ href, icon: Icon, label }) => (
-              <Link key={href} href={href} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">
+              <Link key={href} href={href} className="flex items-center gap-1.5 px-3 lg:px-4 py-1.5 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">
                 <Icon size={15} />
                 {label}
               </Link>

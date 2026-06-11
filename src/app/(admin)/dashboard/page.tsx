@@ -46,7 +46,7 @@ export default async function DashboardPage() {
     supabase.from('invoices').select('amount').in('status', ['pending', 'failed']),
     supabase
       .from('enrollments')
-      .select('id, enrolled_at, status, student:students(first_name, last_name), class:classes(name)')
+      .select('id, enrolled_at, status, student:students(id, first_name, last_name), class:classes(id, name)')
       .order('enrolled_at', { ascending: false })
       .limit(6),
     supabase
@@ -143,7 +143,7 @@ export default async function DashboardPage() {
           {/* Personal greeting — sits on the gradient, above the card */}
           <div className="mb-4">
             <h1 className="h1" style={{ fontSize: 32, letterSpacing: '-0.02em' }}>
-              Hi, <span className="grad-text">{greetingName}</span>.
+              Hi, <span className="grad-text">{greetingName}</span>!
             </h1>
           </div>
 
@@ -274,20 +274,27 @@ export default async function DashboardPage() {
                 <p className="muted" style={{ fontSize: 13 }}>No enrollments yet.</p>
               ) : (
                 <div className="tight-list">
-                  {(recentEnrollments ?? []).map((e: any) => (
-                    <div key={e.id} className="tl-row no-lead">
-                      <div className="tl-main">
-                        <div className="t">
-                          {e.student ? `${e.student.first_name} ${e.student.last_name}` : 'Unknown'}
+                  {(recentEnrollments ?? []).map((e: any) => {
+                    const row = (
+                      <>
+                        <div className="tl-main">
+                          <div className="t">
+                            {e.student ? `${e.student.first_name} ${e.student.last_name}` : 'Unknown'}
+                          </div>
+                          <div className="s">{e.class?.name ?? '—'}</div>
                         </div>
-                        <div className="s">{e.class?.name ?? '—'}</div>
-                      </div>
-                      <div className="tl-trail">
-                        <span className={`tag ${e.status === 'active' ? 'tag-mint' : e.status === 'waitlisted' ? 'tag-amber' : 'tag-blue'}`}>{e.status}</span>
-                        <span>{relDate(e.enrolled_at)}</span>
-                      </div>
-                    </div>
-                  ))}
+                        <div className="tl-trail">
+                          <span className={`tag ${e.status === 'active' ? 'tag-mint' : e.status === 'waitlisted' ? 'tag-amber' : 'tag-blue'}`}>{e.status}</span>
+                          <span>{relDate(e.enrolled_at)}</span>
+                        </div>
+                      </>
+                    )
+                    return e.student?.id ? (
+                      <Link key={e.id} href={`/students/${e.student.id}`} className="tl-row no-lead">{row}</Link>
+                    ) : (
+                      <div key={e.id} className="tl-row no-lead">{row}</div>
+                    )
+                  })}
                 </div>
               )}
             </div>

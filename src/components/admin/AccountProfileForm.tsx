@@ -17,6 +17,9 @@ interface Form {
   address_zip: string
   email_opt_in: boolean
   sms_opt_in: boolean
+  job_title: string
+  bio: string
+  photo_url: string
 }
 
 const EMPTY: Form = {
@@ -24,6 +27,7 @@ const EMPTY: Form = {
   secondary_email: '', secondary_phone: '',
   address_street: '', address_city: '', address_state: '', address_zip: '',
   email_opt_in: true, sms_opt_in: false,
+  job_title: '', bio: '', photo_url: '',
 }
 
 const inputCls = 'w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-studio-500'
@@ -59,6 +63,9 @@ export default function AccountProfileForm() {
           address_zip: d.profile.address_zip ?? '',
           email_opt_in: d.profile.email_opt_in ?? true,
           sms_opt_in: d.profile.sms_opt_in ?? false,
+          job_title: d.profile.job_title ?? '',
+          bio: d.profile.bio ?? '',
+          photo_url: d.profile.photo_url ?? '',
         })
       }
       setLoading(false)
@@ -83,6 +90,36 @@ export default function AccountProfileForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 max-w-2xl">
+      {/* Profile — photo, title, bio */}
+      <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-900 text-sm">Profile</h2>
+          <p className="text-xs text-gray-500 mt-0.5">Your photo, title, and bio as they appear to the team.</p>
+        </div>
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 rounded-full overflow-hidden bg-studio-100 flex items-center justify-center text-studio-700 font-bold text-xl flex-shrink-0">
+              {form.photo_url
+                // eslint-disable-next-line @next/next/no-img-element
+                ? <img src={form.photo_url} alt="" className="w-full h-full object-cover" />
+                : `${(form.first_name[0] ?? '').toUpperCase()}${(form.last_name[0] ?? '').toUpperCase()}` || '·'}
+            </div>
+            <div className="flex-1">
+              <label className={labelCls}>Photo URL</label>
+              <input type="url" value={form.photo_url} onChange={e => set('photo_url', e.target.value)} placeholder="https://…" className={inputCls} />
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Title / role</label>
+            <input type="text" value={form.job_title} onChange={e => set('job_title', e.target.value)} placeholder="e.g. Studio Owner, Front Desk Manager" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Bio</label>
+            <textarea value={form.bio} onChange={e => set('bio', e.target.value)} rows={3} placeholder="A short bio…" className={inputCls} />
+          </div>
+        </div>
+      </section>
+
       {/* Contact */}
       <section className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div className="px-5 py-3.5 border-b border-gray-100">

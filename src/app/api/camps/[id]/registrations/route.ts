@@ -1,5 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { logActivity } from '@/lib/activity'
+import { notify } from '@/lib/notify'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id: campId } = await params
@@ -12,7 +14,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { data: camp, error: campErr } = await supabase
     .from('camps')
-    .select('id, max_capacity')
+    .select('id, max_capacity, name')
     .eq('id', campId)
     .single()
   if (campErr || !camp) {
@@ -59,6 +61,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .select('id')
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 400 })
+
+  const { data: student } = await supabase
+    .from('students').select('first_name, last_name').eq('id', student_id).maybeSingle()
+  const studentName = student ? `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() : null
+  await logActivity({
+    action: isFull ? 'camp_registration.waitlisted' : 'camp_registration.created',
+    targetTable: 'camp_registrations',
+    targetId: data.id,
+    targetLabel: studentName && camp.name ? `${studentName} → ${camp.name}` : studentName,
+    metadata: { camp_id: campId, student_id, waitlisted: isFull, waitlist_position: waitlistPosition },
+  }, supabase)
+
+  await notify({
+    type: isFull ? 'camp_registration.waitlisted' : 'camp_registration.created',
+    title: isFull ? 'New camp waitlist' : 'New camp registration',
+    body: studentName && camp.name
+      ? `${studentName} ${isFull ? 'waitlisted for' : 'registered for'} ${camp.name}`
+      : 'A camper was registered',
+    href: `/camps/${campId}`,
+    metadata: { camp_id: campId, student_id, waitlisted: isFull },
+  }, supabase)
 
   return NextResponse.json({ ...data, waitlisted: isFull }, { status: 201 })
 }

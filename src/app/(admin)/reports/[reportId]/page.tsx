@@ -40,7 +40,7 @@ export default async function ReportRunPage({
 
   return (
     <div className="flex flex-col h-full">
-      <Header title={`${def.id} · ${def.title}`} subtitle={def.description} />
+      <Header title={`${def.id} · ${def.title}`} subtitle={def.description} back="/reports" />
       <div className="p-6 overflow-y-auto">
         <ReportViewer def={def} filters={filters} result={result} />
       </div>

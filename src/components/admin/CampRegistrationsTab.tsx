@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { UserPlus, Trash2 } from 'lucide-react'
 import { formatCurrency, formatDate, formatAge } from '@/lib/utils'
 import type { CampRegistration, StudentOption } from '@/components/admin/CampDetail'
@@ -182,7 +183,13 @@ export default function CampRegistrationsTab({ campId, maxCapacity, price, regis
                   const name = r.student ? `${r.student.first_name} ${r.student.last_name}` : '—'
                   return (
                     <tr key={r.id} className="hover:bg-gray-50">
-                      <td className="px-5 py-3 text-sm font-medium text-gray-900">{name}</td>
+                      <td className="px-5 py-3 text-sm font-medium text-gray-900">
+                        {r.student ? (
+                          <Link href={`/students/${r.student.id}`} className="hover:text-studio-700 hover:underline">
+                            {name}
+                          </Link>
+                        ) : name}
+                      </td>
                       <td className="px-5 py-3 text-sm text-gray-600">
                         {r.student ? formatAge(r.student.date_of_birth) : '—'}
                       </td>

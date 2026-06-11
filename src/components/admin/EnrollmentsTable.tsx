@@ -698,7 +698,11 @@ export default function EnrollmentsTable({
                       </td>
                       <td className="px-5 py-3">
                         <div className="text-sm font-medium text-gray-900 flex items-center gap-1.5">
-                          {name}
+                          {e.student ? (
+                            <Link href={`/students/${e.student.id}`} className="hover:text-studio-700 hover:underline">
+                              {name}
+                            </Link>
+                          ) : name}
                           {e.archived && (
                             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-gray-200 text-gray-600 uppercase tracking-wide">
                               Archived
@@ -709,7 +713,13 @@ export default function EnrollmentsTable({
                           <div className="text-xs text-gray-400 truncate max-w-[16rem]">{e.notes}</div>
                         )}
                       </td>
-                      <td className="px-5 py-3 text-sm text-gray-600">{e.class?.name ?? '—'}</td>
+                      <td className="px-5 py-3 text-sm text-gray-600">
+                        {e.class ? (
+                          <Link href={`/classes/${e.class.id}`} className="hover:text-studio-700 hover:underline">
+                            {e.class.name}
+                          </Link>
+                        ) : '—'}
+                      </td>
                       <td className="px-5 py-3 text-sm text-gray-600">{e.season?.name ?? '—'}</td>
                       <td className="px-5 py-3 text-sm text-gray-500">{formatDate(e.enrolled_at)}</td>
                       <td className="px-5 py-3">
