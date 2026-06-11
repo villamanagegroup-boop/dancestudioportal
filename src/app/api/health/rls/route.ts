@@ -21,7 +21,7 @@ export async function GET() {
   const anon = createClient(url, anonKey, { auth: { persistSession: false } })
 
   const results = await Promise.all(SAMPLE_TABLES.map(async table => {
-    const { data, error } = await anon.from(table).select('id').limit(1)
+    const { data, error } = await anon.from(table).select('*').limit(1)
     const rows = Array.isArray(data) ? data.length : 0
     // Exposed only if the anon key actually pulled a row back.
     return { table, exposed: !error && rows > 0, rows, error: error?.message ?? null }
