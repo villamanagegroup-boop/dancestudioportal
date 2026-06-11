@@ -10,6 +10,7 @@ const OPEN_API = [
   '/api/auth', '/api/portal', '/api/account',
   '/api/stripe', '/api/paypal', '/api/checkout',
   '/api/intake/from-site',
+  '/api/contact', // public studio contact form (login screen)
 ]
 
 // Member portal roots (their own entitlement checks below).
@@ -74,7 +75,10 @@ export async function proxy(request: NextRequest) {
   // ---- Page authorization -------------------------------------------------
   const isMember = matches(path, MEMBER_PAGES)
   // Anything that isn't a member portal or a known public page is an admin page.
-  const PUBLIC_PAGES = ['/login', '/signup', '/forgot-password', '/reset-password', '/accept-invite', '/pay', '/post-login', '/']
+  // '/auth/callback' MUST be public: the OAuth round-trip lands here with a
+  // `code` but no session yet, so gating it would bounce the user to /login
+  // before the code is exchanged. '/contact' is the public studio contact form.
+  const PUBLIC_PAGES = ['/login', '/signup', '/forgot-password', '/reset-password', '/accept-invite', '/auth/callback', '/contact', '/pay', '/post-login', '/']
   const isPublic = matches(path, PUBLIC_PAGES) || path === '/'
   const isAdminPage = !isMember && !isPublic
 
