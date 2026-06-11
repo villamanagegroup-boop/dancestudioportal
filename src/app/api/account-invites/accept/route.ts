@@ -133,6 +133,25 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // A guardian invited from another family's portal joins that family — link the
+  // new guardian to all of the inviting guardian's dancers (as a secondary).
+  if (invite.role === 'parent' && typeof metadata.link_guardian_id === 'string') {
+    const { data: theirStudents } = await admin
+      .from('guardian_students')
+      .select('student_id')
+      .eq('guardian_id', metadata.link_guardian_id)
+    const rows = (theirStudents ?? []).map(s => ({
+      guardian_id: newUserId,
+      student_id: s.student_id,
+      relationship: 'guardian',
+      is_primary: false,
+    }))
+    // The guardian is brand-new, so they have no existing links to dedupe against.
+    if (rows.length > 0) {
+      await admin.from('guardian_students').insert(rows)
+    }
+  }
+
   await admin.from('account_invites')
     .update({ used_at: new Date().toISOString(), used_by: newUserId })
     .eq('id', invite.id)

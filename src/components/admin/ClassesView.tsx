@@ -6,6 +6,8 @@ import { Plus, ChevronUp, ChevronDown } from 'lucide-react'
 import { formatTime } from '@/lib/utils'
 import ClassFormModal from '@/components/forms/ClassFormModal'
 import RowActions from '@/components/admin/RowActions'
+import BulkEditBar, { type BulkField } from '@/components/admin/BulkEditBar'
+import { useRowSelection } from '@/components/admin/useRowSelection'
 
 type SortKey = 'name' | 'day' | 'instructor' | 'room' | 'capacity' | 'tuition'
 type SortDir = 'asc' | 'desc'
@@ -45,6 +47,25 @@ export default function ClassesView({ classes, instructors, rooms, classTypes, s
   const [showModal, setShowModal] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('day')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const { selected, toggle, setMany, clear } = useRowSelection()
+
+  const bulkFields: BulkField[] = [
+    { key: 'day_of_week', label: 'Day of week', type: 'select', options: DAY_ORDER.map(d => ({ value: d, label: d[0].toUpperCase() + d.slice(1) })) },
+    { key: 'start_time', label: 'Start time', type: 'time' },
+    { key: 'end_time', label: 'End time', type: 'time' },
+    { key: 'start_date', label: 'Class start date', type: 'date' },
+    { key: 'end_date', label: 'Class end date', type: 'date' },
+    { key: 'instructor_id', label: 'Instructor', type: 'select', options: instructors.map(i => ({ value: i.id, label: `${i.first_name} ${i.last_name}` })) },
+    { key: 'room_id', label: 'Room', type: 'select', options: rooms.map(r => ({ value: r.id, label: r.name })) },
+    { key: 'season_id', label: 'Season', type: 'select', options: (seasons ?? []).map((s: any) => ({ value: s.id, label: s.name })) },
+    { key: 'class_type_id', label: 'Class type', type: 'select', options: (classTypes ?? []).map((t: any) => ({ value: t.id, label: t.name })) },
+    { key: 'max_students', label: 'Max students', type: 'number' },
+    { key: 'monthly_tuition', label: 'Monthly tuition', type: 'currency', placeholder: '0.00' },
+    { key: 'registration_fee', label: 'Registration fee', type: 'currency', placeholder: '0.00' },
+    { key: 'registration_open', label: 'Registration open', type: 'boolean' },
+    { key: 'visible', label: 'Visible to parents', type: 'boolean' },
+    { key: 'active', label: 'Active', type: 'boolean' },
+  ]
 
   function toggleSort(col: SortKey) {
     if (sortKey === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -80,6 +101,16 @@ export default function ClassesView({ classes, instructors, rooms, classTypes, s
           <table className="w-full">
             <thead>
               <tr className="border-b border-gray-100">
+                <th className="px-4 py-3 w-10">
+                  <input
+                    type="checkbox"
+                    aria-label="Select all classes"
+                    checked={sortedClasses.length > 0 && sortedClasses.every(c => selected.has(c.id))}
+                    ref={el => { if (el) el.indeterminate = sortedClasses.some(c => selected.has(c.id)) && !sortedClasses.every(c => selected.has(c.id)) }}
+                    onChange={e => setMany(sortedClasses.map(c => c.id), e.target.checked)}
+                    className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                  />
+                </th>
                 {([['name', 'Class'], ['day', 'Day / Time'], ['instructor', 'Instructor'], ['room', 'Room'], ['capacity', 'Capacity'], ['tuition', 'Tuition']] as [SortKey, string][]).map(([col, label]) => (
                   <th key={col} onClick={() => toggleSort(col)} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase cursor-pointer select-none hover:text-gray-700">
                     {label}<SortIcon col={col} sortKey={sortKey} sortDir={sortDir} />
@@ -90,7 +121,16 @@ export default function ClassesView({ classes, instructors, rooms, classTypes, s
             </thead>
             <tbody className="divide-y divide-gray-50">
               {sortedClasses.map(cls => (
-                <tr key={cls.id} className="group hover:bg-gray-50">
+                <tr key={cls.id} className={`group hover:bg-gray-50 ${selected.has(cls.id) ? 'bg-studio-50/50' : ''}`}>
+                  <td className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      aria-label={`Select ${cls.name}`}
+                      checked={selected.has(cls.id)}
+                      onChange={() => toggle(cls.id)}
+                      className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                    />
+                  </td>
                   <td className="px-5 py-3">
                     <Link href={`/classes/${cls.id}`} className="flex items-center gap-2">
                       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: cls.class_type?.color ?? '#7c3aed' }} />
@@ -136,6 +176,13 @@ export default function ClassesView({ classes, instructors, rooms, classTypes, s
           seasons={seasons}
         />
       )}
+      <BulkEditBar
+        ids={[...selected]}
+        endpointBase="/api/classes"
+        entityLabel="class"
+        fields={bulkFields}
+        onClear={clear}
+      />
     </>
   )
 }

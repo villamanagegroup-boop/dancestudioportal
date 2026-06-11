@@ -69,7 +69,7 @@ export default async function DancerProfilePage({ params }: { params: Promise<{ 
           {student.first_name} {student.last_name}
         </h1>
         <p className="mt-1.5" style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-2)' }}>
-          {getAgeFromDob(student.date_of_birth)} years old
+          {student.date_of_birth ? `${getAgeFromDob(student.date_of_birth)} years old` : 'Birthdate not set'}
         </p>
       </div>
 

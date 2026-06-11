@@ -26,3 +26,6 @@ begin
   return new;
 end;
 $$;
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('fix_handle_new_user.sql') on conflict (filename) do nothing;

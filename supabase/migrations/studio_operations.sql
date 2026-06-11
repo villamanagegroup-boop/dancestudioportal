@@ -91,3 +91,6 @@ create policy "admins_all_bookings" on bookings for all using (
 
 drop policy if exists "guardians_own_bookings" on bookings;
 create policy "guardians_own_bookings" on bookings for select using (guardian_id = auth.uid());
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('studio_operations.sql') on conflict (filename) do nothing;

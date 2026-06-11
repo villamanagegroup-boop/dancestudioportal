@@ -48,3 +48,6 @@ create policy "instructors_delete_own_unapproved" on instructor_hours for delete
   approved_at is null
   and exists (select 1 from instructors i where i.id = instructor_id and i.profile_id = auth.uid())
 );
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('instructor_portal_module.sql') on conflict (filename) do nothing;

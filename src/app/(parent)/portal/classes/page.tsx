@@ -1,4 +1,5 @@
 import { getPortalViewer } from '@/lib/portal-viewer'
+import { getParentPortalSettings } from '@/lib/portal-settings'
 import { formatTime, cn } from '@/lib/utils'
 import ClassEnrollCard from '@/components/portal/ClassEnrollCard'
 import SectionHead from '@/components/admin/SectionHead'
@@ -8,6 +9,17 @@ const NO_ID = '00000000-0000-0000-0000-000000000000'
 export default async function ParentClassesPage() {
   const { db, effectiveId } = await getPortalViewer('g')
   const gid = effectiveId ?? NO_ID
+  const settings = await getParentPortalSettings()
+
+  if (!settings.show_classes) {
+    return (
+      <div className="py-16 text-center">
+        <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>Classes</p>
+        <h1 className="h1 mt-2" style={{ fontSize: 22 }}>Class registration is currently unavailable.</h1>
+        <p className="mt-2 muted" style={{ fontSize: 13 }}>Please contact the studio to enroll.</p>
+      </div>
+    )
+  }
 
   const { data: guardianStudents } = await db
     .from('guardian_students')
@@ -85,13 +97,13 @@ export default async function ParentClassesPage() {
                 <div className="t">{e.class?.name}</div>
                 <div className="s">
                   {studentName(e.student_id)}
-                  {e.class?.instructor && <> · {e.class.instructor.first_name} {e.class.instructor.last_name}</>}
+                  {settings.show_instructors && e.class?.instructor && <> · {e.class.instructor.first_name} {e.class.instructor.last_name}</>}
                   {e.class?.room && <> · {e.class.room.name}</>}
                 </div>
               </div>
               <div className="tl-trail">
                 <span className={cn('tag', e.status === 'active' ? 'tag-mint' : 'tag-amber')}>{e.status}</span>
-                <span style={{ fontWeight: 600, color: 'var(--ink-1)' }}>${e.class?.monthly_tuition}/mo</span>
+                {settings.show_tuition && <span style={{ fontWeight: 600, color: 'var(--ink-1)' }}>${e.class?.monthly_tuition}/mo</span>}
               </div>
             </div>
           ))}
@@ -119,9 +131,9 @@ export default async function ParentClassesPage() {
                   day_of_week: cls.day_of_week,
                   start_time: cls.start_time,
                   end_time: cls.end_time,
-                  monthly_tuition: Number(cls.monthly_tuition),
+                  monthly_tuition: settings.show_tuition ? Number(cls.monthly_tuition) : null,
                   color: cls.class_type?.color ?? '#7c3aed',
-                  instructorName: cls.instructor
+                  instructorName: settings.show_instructors && cls.instructor
                     ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
                     : null,
                   spotsLeft,

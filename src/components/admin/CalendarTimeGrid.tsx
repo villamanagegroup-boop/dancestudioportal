@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { iso, parseHour, type CalItem } from '@/lib/calendar'
+import CalItemActions from '@/components/admin/CalItemActions'
 
 const CELL_PX = 60
 
@@ -21,10 +22,11 @@ interface Props {
   onSlotClick: (date: Date, hour: number) => void
   onItemClick: (item: CalItem) => void
   onItemDrop: (item: CalItem, date: Date, hour: number) => void
+  onEditItem: (item: CalItem) => void
 }
 
 export default function CalendarTimeGrid({
-  dates, bandItems, timedItems, studioHours, conflicts, onSlotClick, onItemClick, onItemDrop,
+  dates, bandItems, timedItems, studioHours, conflicts, onSlotClick, onItemClick, onItemDrop, onEditItem,
 }: Props) {
   const [drag, setDrag] = useState<CalItem | null>(null)
 
@@ -64,27 +66,26 @@ export default function CalendarTimeGrid({
           <div className="space-y-1">
             {bandItems.map(item => (
               <div key={item.key} style={{ position: 'relative', height: 26 }}>
-                <button
-                  onClick={() => onItemClick(item)}
-                  title={item.title}
+                <div
                   style={{
                     ...colSpanStyle(item),
                     height: 22,
                     background: item.color,
-                    color: 'white',
                     borderRadius: 6,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: '0 8px',
-                    textAlign: 'left',
-                    overflow: 'hidden',
-                    whiteSpace: 'nowrap',
-                    textOverflow: 'ellipsis',
                     outline: conflicts.has(item.key) ? '2px solid #ef4444' : undefined,
                   }}
+                  className="flex items-center overflow-hidden"
                 >
-                  {item.title}
-                </button>
+                  <button
+                    onClick={() => onItemClick(item)}
+                    title={item.title}
+                    className="flex-1 min-w-0 truncate text-left text-white px-2"
+                    style={{ fontSize: 11, fontWeight: 600 }}
+                  >
+                    {item.title}
+                  </button>
+                  <span className="pr-1"><CalItemActions item={item} onEdit={onEditItem} tone="light" /></span>
+                </div>
               </div>
             ))}
           </div>
@@ -160,6 +161,13 @@ export default function CalendarTimeGrid({
                     onDragEnd={() => setDrag(null)}
                     onClick={() => onItemClick(item)}
                   >
+                    <div
+                      className="absolute top-0.5 right-0.5"
+                      draggable={false}
+                      onMouseDown={e => e.stopPropagation()}
+                    >
+                      <CalItemActions item={item} onEdit={onEditItem} tone="light" />
+                    </div>
                     <div className="e-t">{item.title}</div>
                     {item.subtitle && <div className="e-s">{item.subtitle}</div>}
                     {item.roomName && <div className="e-r">{item.roomName}</div>}

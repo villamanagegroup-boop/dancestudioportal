@@ -45,3 +45,6 @@ create policy "partners_own_bookings" on bookings for select
         and partners.profile_id = auth.uid()
     )
   );
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('partner_role_module.sql') on conflict (filename) do nothing;

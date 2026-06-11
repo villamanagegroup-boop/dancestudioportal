@@ -12,3 +12,6 @@ begin
       check (staff_role in ('owner', 'manager', 'front_desk', 'instructor'));
   end if;
 end $$;
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('staff_permissions_module.sql') on conflict (filename) do nothing;

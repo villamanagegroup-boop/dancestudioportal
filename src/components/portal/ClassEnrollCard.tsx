@@ -16,7 +16,7 @@ interface ClassInfo {
   day_of_week: string
   start_time: string
   end_time: string
-  monthly_tuition: number
+  monthly_tuition: number | null
   color: string
   instructorName: string | null
   spotsLeft: number | null
@@ -52,7 +52,7 @@ export default function ClassEnrollCard({ cls, students }: Props) {
       })
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json.error ?? 'Could not enroll')
-      setDone(json.waitlisted ? 'Added to the waitlist' : 'Enrolled!')
+      setDone(json.pending ? 'Request sent — pending studio approval' : json.waitlisted ? 'Added to the waitlist' : 'Enrolled!')
       setStudentId('')
       router.refresh()
     } catch (err: any) {
@@ -78,7 +78,9 @@ export default function ClassEnrollCard({ cls, students }: Props) {
       </p>
       {cls.instructorName && <p className="text-sm text-gray-500">{cls.instructorName}</p>}
       <div className="flex items-center justify-between mt-2">
-        <p className="text-sm font-semibold text-gray-900">${cls.monthly_tuition}/mo</p>
+        {cls.monthly_tuition != null
+          ? <p className="text-sm font-semibold text-gray-900">${cls.monthly_tuition}/mo</p>
+          : <span />}
         {cls.spotsLeft != null && cls.spotsLeft > 0 && (
           <p className="text-xs text-gray-400">{cls.spotsLeft} spot{cls.spotsLeft === 1 ? '' : 's'} left</p>
         )}

@@ -8,7 +8,7 @@ import {
   CreditCard, UserCheck, MessageSquare, Settings,
   Menu, X, Home, ChevronDown, ChevronRight, ChevronsLeft, ChevronsRight,
   Tent, Sparkles, CalendarCheck, BarChart2, GraduationCap,
-  Handshake, Activity, ShieldCheck, FileText, Database, Receipt,
+  Handshake, Activity, ShieldCheck, FileText, Database, Receipt, Inbox, ScrollText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import PortalSwitcher, { type PortalKey } from '@/components/PortalSwitcher'
@@ -27,6 +27,7 @@ const navItems: NavItem[] = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/calendar', icon: CalendarDays, label: 'Calendar' },
   { href: '/communications', icon: MessageSquare, label: 'Communications' },
+  { href: '/intake', icon: Inbox, label: 'Intake' },
   {
     href: '/accounts',
     icon: Users,
@@ -47,8 +48,15 @@ const navItems: NavItem[] = [
       { href: '/enrollments', icon: ClipboardList, label: 'Enrollments' },
     ],
   },
-  { href: '/parties', icon: Sparkles, label: 'Events' },
-  { href: '/bookings', icon: CalendarCheck, label: 'Bookings' },
+  {
+    href: '/events',
+    icon: Sparkles,
+    label: 'Events',
+    children: [
+      { href: '/parties', icon: Sparkles, label: 'Parties & Recitals' },
+      { href: '/bookings', icon: CalendarCheck, label: 'Bookings' },
+    ],
+  },
   {
     href: '/admin',
     icon: ShieldCheck,
@@ -59,6 +67,7 @@ const navItems: NavItem[] = [
       { href: '/reports', icon: BarChart2, label: 'Reports' },
       { href: '/staff', icon: UserCheck, label: 'Staff' },
       { href: '/documents', icon: FileText, label: 'Documents' },
+      { href: '/policies', icon: ScrollText, label: 'Policies' },
       { href: '/import', icon: Database, label: 'Import data' },
     ],
   },

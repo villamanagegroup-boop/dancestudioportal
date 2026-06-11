@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Search, Plus, ChevronRight, ChevronUp, ChevronDown, Mail } from 'lucide-react'
-import { getAgeFromDob } from '@/lib/utils'
+import { formatAge } from '@/lib/utils'
 import StudentFormModal from '@/components/forms/StudentFormModal'
 import InviteAccountModal from '@/components/forms/InviteAccountModal'
 import RowActions from '@/components/admin/RowActions'
+import BulkEditBar, { type BulkField } from '@/components/admin/BulkEditBar'
+import { useRowSelection } from '@/components/admin/useRowSelection'
 
 type SortKey = 'name' | 'age' | 'guardian' | 'status'
 type SortDir = 'asc' | 'desc'
@@ -24,6 +26,7 @@ interface Student {
   last_name: string
   date_of_birth: string
   active: boolean
+  member_no?: number | null
   guardian_students: Array<{
     guardian: { first_name: string; last_name: string; email: string } | null
   }>
@@ -41,6 +44,15 @@ export default function StudentsTable({ students, families }: { students: Studen
   const [showInvite, setShowInvite] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const { selected, toggle, setMany, clear } = useRowSelection()
+
+  const bulkFields: BulkField[] = [
+    { key: 'active', label: 'Status (active)', type: 'boolean' },
+    { key: 'membership_tier', label: 'Membership tier', type: 'text' },
+    { key: 'grade', label: 'Grade', type: 'text' },
+    { key: 'shirt_size', label: 'Shirt size', type: 'text' },
+    { key: 'shoe_size', label: 'Shoe size', type: 'text' },
+  ]
 
   const primaryGuardian = (s: Student) => {
     const gs = s.guardian_students[0]
@@ -107,6 +119,16 @@ export default function StudentsTable({ students, families }: { students: Studen
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      aria-label="Select all students"
+                      checked={filtered.length > 0 && filtered.every(s => selected.has(s.id))}
+                      ref={el => { if (el) el.indeterminate = filtered.some(s => selected.has(s.id)) && !filtered.every(s => selected.has(s.id)) }}
+                      onChange={e => setMany(filtered.map(s => s.id), e.target.checked)}
+                      className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                    />
+                  </th>
                   {(['name', 'age', 'guardian', 'status'] as SortKey[]).map(col => (
                     <th key={col} onClick={() => toggleSort(col)} className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide cursor-pointer select-none hover:text-gray-700">
                       {col.charAt(0).toUpperCase() + col.slice(1)}
@@ -118,19 +140,33 @@ export default function StudentsTable({ students, families }: { students: Studen
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.map(student => (
-                  <tr key={student.id} className="group hover:bg-gray-50 transition-colors">
+                  <tr key={student.id} className={`group hover:bg-gray-50 transition-colors ${selected.has(student.id) ? 'bg-studio-50/50' : ''}`}>
+                    <td className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${student.first_name} ${student.last_name}`}
+                        checked={selected.has(student.id)}
+                        onChange={() => toggle(student.id)}
+                        className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                      />
+                    </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-studio-100 flex items-center justify-center text-studio-700 text-xs font-semibold flex-shrink-0">
                           {student.first_name[0]}{student.last_name[0]}
                         </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {student.first_name} {student.last_name}
+                        <span>
+                          <span className="block text-sm font-medium text-gray-900">
+                            {student.first_name} {student.last_name}
+                          </span>
+                          {student.member_no != null && (
+                            <span className="block text-xs font-mono text-gray-400">#{student.member_no}</span>
+                          )}
                         </span>
                       </div>
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-600">
-                      {getAgeFromDob(student.date_of_birth)} yrs
+                      {formatAge(student.date_of_birth)}
                     </td>
                     <td className="px-5 py-3 text-sm text-gray-600">{primaryGuardian(student)}</td>
                     <td className="px-5 py-3">
@@ -161,6 +197,13 @@ export default function StudentsTable({ students, families }: { students: Studen
       </div>
       {showModal && <StudentFormModal onClose={() => setShowModal(false)} families={families} />}
       {showInvite && <InviteAccountModal role="parent" onClose={() => setShowInvite(false)} />}
+      <BulkEditBar
+        ids={[...selected]}
+        endpointBase="/api/students"
+        entityLabel="student"
+        fields={bulkFields}
+        onClear={clear}
+      />
     </>
   )
 }

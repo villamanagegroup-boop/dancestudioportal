@@ -7,6 +7,8 @@ import FamilyFormModal from '@/components/forms/FamilyFormModal'
 import InviteAccountModal from '@/components/forms/InviteAccountModal'
 import RolesPanelModal from '@/components/admin/RolesPanelModal'
 import RowActions from '@/components/admin/RowActions'
+import BulkEditBar, { type BulkField } from '@/components/admin/BulkEditBar'
+import { useRowSelection } from '@/components/admin/useRowSelection'
 
 interface Family {
   id: string
@@ -17,6 +19,8 @@ interface Family {
   active: boolean
   created_at: string
   student_count: number
+  family_id_label?: string
+  member_id_label?: string
 }
 
 type SortKey = 'name' | 'email' | 'students' | 'joined'
@@ -35,6 +39,16 @@ export default function FamiliesTable({ families }: { families: Family[] }) {
   const [showInvite, setShowInvite] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
+  const { selected, toggle, setMany, clear } = useRowSelection()
+
+  const bulkFields: BulkField[] = [
+    { key: 'active', label: 'Status (active)', type: 'boolean' },
+    { key: 'email_opt_in', label: 'Email opt-in', type: 'boolean' },
+    { key: 'sms_opt_in', label: 'SMS opt-in', type: 'boolean' },
+    { key: 'address_city', label: 'City', type: 'text' },
+    { key: 'address_state', label: 'State', type: 'text' },
+    { key: 'address_zip', label: 'ZIP', type: 'text' },
+  ]
 
   function toggleSort(col: SortKey) {
     if (sortKey === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -99,6 +113,16 @@ export default function FamiliesTable({ families }: { families: Family[] }) {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-100">
+                  <th className="px-4 py-3 w-10">
+                    <input
+                      type="checkbox"
+                      aria-label="Select all families"
+                      checked={filtered.length > 0 && filtered.every(f => selected.has(f.id))}
+                      ref={el => { if (el) el.indeterminate = filtered.some(f => selected.has(f.id)) && !filtered.every(f => selected.has(f.id)) }}
+                      onChange={e => setMany(filtered.map(f => f.id), e.target.checked)}
+                      className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                    />
+                  </th>
                   {cols.map(([col, label]) => (
                     <th
                       key={col}
@@ -114,14 +138,28 @@ export default function FamiliesTable({ families }: { families: Family[] }) {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {filtered.map(family => (
-                  <tr key={family.id} className="group hover:bg-gray-50 transition-colors">
+                  <tr key={family.id} className={`group hover:bg-gray-50 transition-colors ${selected.has(family.id) ? 'bg-studio-50/50' : ''}`}>
+                    <td className="px-4 py-3 w-10">
+                      <input
+                        type="checkbox"
+                        aria-label={`Select ${family.first_name} ${family.last_name}`}
+                        checked={selected.has(family.id)}
+                        onChange={() => toggle(family.id)}
+                        className="rounded border-gray-300 text-studio-600 focus:ring-studio-500"
+                      />
+                    </td>
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-studio-100 flex items-center justify-center text-studio-700 text-xs font-semibold flex-shrink-0">
                           {family.first_name[0]}{family.last_name[0]}
                         </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {family.first_name} {family.last_name}
+                        <span>
+                          <span className="text-sm font-medium text-gray-900">
+                            {family.first_name} {family.last_name}
+                          </span>
+                          {family.family_id_label && family.family_id_label !== '—' && (
+                            <span className="block text-xs font-mono text-gray-400">{family.family_id_label}</span>
+                          )}
                         </span>
                         {!family.active && (
                           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500">Archived</span>
@@ -163,6 +201,13 @@ export default function FamiliesTable({ families }: { families: Family[] }) {
       </div>
       {showModal && <FamilyFormModal onClose={() => setShowModal(false)} />}
       {showInvite && <InviteAccountModal role="parent" onClose={() => setShowInvite(false)} />}
+      <BulkEditBar
+        ids={[...selected]}
+        endpointBase="/api/families"
+        entityLabel="family"
+        fields={bulkFields}
+        onClear={clear}
+      />
     </>
   )
 }

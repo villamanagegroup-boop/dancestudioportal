@@ -21,11 +21,16 @@ export async function getAvailablePortals(
 
   const admin = createAdminClient()
   const [{ data: instr }, { data: partn }, { data: guardian }, { data: prof }] = await Promise.all([
-    admin.from('instructors').select('id').eq('profile_id', userId).maybeSingle(),
+    admin.from('instructors').select('id, staff_role').eq('profile_id', userId).maybeSingle(),
     admin.from('partners').select('id').eq('profile_id', userId).maybeSingle(),
     admin.from('guardian_students').select('id').eq('guardian_id', userId).limit(1).maybeSingle(),
     admin.from('profiles').select('extra_roles').eq('id', userId).maybeSingle(),
   ])
+
+  // The studio owner always has access to every portal, regardless of their
+  // primary role — the owner designation lives on the staff (instructors) row.
+  if ((instr as any)?.staff_role === 'owner') return ['admin', 'instructor', 'parent', 'partner']
+
   const extra: string[] = (prof as any)?.extra_roles ?? []
 
   const result: PortalKey[] = []
@@ -52,9 +57,15 @@ export async function hasPortalEntitlement(
 ): Promise<boolean> {
   if (role === 'admin') return true
   if (portal === 'parent') return true // permissive — any authenticated user
-  if (portal === 'admin') return role === 'admin'
 
   const admin = createAdminClient()
+
+  // Owner passes every portal gate (including admin), regardless of role.
+  const { data: ownerRow } = await admin
+    .from('instructors').select('staff_role').eq('profile_id', userId).eq('staff_role', 'owner').maybeSingle()
+  if (ownerRow) return true
+
+  if (portal === 'admin') return role === 'admin'
   if (portal === 'instructor') {
     if (role === 'instructor') return true
     const { data } = await admin.from('instructors').select('id').eq('profile_id', userId).maybeSingle()

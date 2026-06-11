@@ -26,3 +26,6 @@ drop policy if exists "admins_all_payment_methods" on payment_methods;
 create policy "admins_all_payment_methods" on payment_methods for all using (
   exists (select 1 from profiles where id = auth.uid() and role = 'admin')
 );
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('paypal_vault_module.sql') on conflict (filename) do nothing;

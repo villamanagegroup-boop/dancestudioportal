@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  cn, formatDate, formatCurrency, formatTime, getAgeFromDob,
+  cn, formatDate, formatCurrency, formatTime, getAgeFromDob, formatAge,
   getEnrollmentStatusColor, getPaymentStatusColor,
 } from '@/lib/utils'
 import {
@@ -235,7 +235,7 @@ function ProfileTab({ student, guardians, lastChargedAt }: { student: StudentRec
           <div>
             <h2 className="font-semibold text-gray-900 text-lg">{student.first_name} {student.last_name}</h2>
             <p className="text-sm text-gray-500">
-              {student.active ? 'Active dancer' : 'Inactive'} · Age {getAgeFromDob(student.date_of_birth)}
+              {student.active ? 'Active dancer' : 'Inactive'}{student.date_of_birth ? ` · Age ${getAgeFromDob(student.date_of_birth)}` : ''}
               {student.grade && ` · Grade ${student.grade}`}
             </p>
           </div>
@@ -252,7 +252,7 @@ function ProfileTab({ student, guardians, lastChargedAt }: { student: StudentRec
         <Section title="Personal">
           <Field label="Full name" value={`${student.first_name} ${student.last_name}`} />
           <Field label="Date of birth" value={formatDate(student.date_of_birth)} />
-          <Field label="Age" value={`${getAgeFromDob(student.date_of_birth)} yrs`} />
+          <Field label="Age" value={formatAge(student.date_of_birth)} />
           <Field label="Gender" value={student.gender ?? '—'} />
           <Field label="Grade" value={student.grade ?? '—'} />
           <Field label="Association ID" value={student.association_id ?? '—'} />

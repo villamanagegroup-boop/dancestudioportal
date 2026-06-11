@@ -16,7 +16,7 @@ export default async function PartiesPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <Header title="Events" subtitle="Birthday parties, recitals, and studio events" />
+      <Header title="Parties &amp; Recitals" subtitle="Birthday parties, recitals, and studio events" />
       <div className="flex-1 overflow-y-auto">
         <div className="page-gutter min-h-full">
           <div className="glass glass-page min-h-full">

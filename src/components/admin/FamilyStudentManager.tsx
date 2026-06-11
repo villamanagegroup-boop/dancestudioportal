@@ -103,7 +103,7 @@ export default function FamilyStudentManager({ familyId, linkedStudents, availab
                     {is_primary && <span className="ml-2 text-xs text-studio-600 bg-studio-50 px-1.5 py-0.5 rounded-full">primary</span>}
                   </p>
                   <p className="text-xs text-gray-500">
-                    Age {getAgeFromDob(student!.date_of_birth)} · {relationship}
+                    {student!.date_of_birth ? `Age ${getAgeFromDob(student!.date_of_birth)} · ` : ''}{relationship}
                     {!student!.active && ' · Inactive'}
                   </p>
                 </div>

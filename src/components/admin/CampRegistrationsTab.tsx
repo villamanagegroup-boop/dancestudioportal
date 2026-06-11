@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { UserPlus, Trash2 } from 'lucide-react'
-import { formatCurrency, formatDate, getAgeFromDob } from '@/lib/utils'
+import { formatCurrency, formatDate, formatAge } from '@/lib/utils'
 import type { CampRegistration, StudentOption } from '@/components/admin/CampDetail'
 
 interface Props {
@@ -14,10 +14,11 @@ interface Props {
   students: StudentOption[]
 }
 
-const STATUSES = ['registered', 'waitlisted', 'cancelled', 'completed']
+const STATUSES = ['pending', 'registered', 'waitlisted', 'cancelled', 'completed']
 const PAYMENTS = ['unpaid', 'deposit', 'paid', 'refunded', 'waived']
 
 const STATUS_COLOR: Record<string, string> = {
+  pending: 'bg-amber-100 text-amber-700',
   registered: 'bg-green-100 text-green-700',
   waitlisted: 'bg-yellow-100 text-yellow-700',
   cancelled: 'bg-gray-100 text-gray-500',
@@ -183,7 +184,7 @@ export default function CampRegistrationsTab({ campId, maxCapacity, price, regis
                     <tr key={r.id} className="hover:bg-gray-50">
                       <td className="px-5 py-3 text-sm font-medium text-gray-900">{name}</td>
                       <td className="px-5 py-3 text-sm text-gray-600">
-                        {r.student ? `${getAgeFromDob(r.student.date_of_birth)} yrs` : '—'}
+                        {r.student ? formatAge(r.student.date_of_birth) : '—'}
                       </td>
                       <td className="px-5 py-3 text-sm text-gray-500">{formatDate(r.registered_at)}</td>
                       <td className="px-5 py-3">

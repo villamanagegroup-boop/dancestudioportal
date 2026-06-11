@@ -63,3 +63,6 @@ begin
       ('Retail', 'Pro shop and merchandise sales');
   end if;
 end $$;
+
+-- Record this migration as applied (requires migration_tracking.sql).
+insert into applied_migrations (filename) values ('settings_module.sql') on conflict (filename) do nothing;
