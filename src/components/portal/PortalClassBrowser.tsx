@@ -13,9 +13,14 @@ export interface BrowseClass {
   monthly_tuition: number | null
   color: string
   style: string | null
+  age_min: number | null
+  age_max: number | null
+  gender: string | null
   instructorName: string | null
   spotsLeft: number | null
 }
+
+const OPEN_GENDERS = new Set(['', 'any', 'all', 'coed', 'mixed'])
 
 interface Student { id: string; first_name: string; last_name: string }
 
@@ -27,6 +32,8 @@ export default function PortalClassBrowser({ classes, students }: { classes: Bro
   const [q, setQ] = useState('')
   const [day, setDay] = useState('')
   const [style, setStyle] = useState('')
+  const [age, setAge] = useState('')
+  const [gender, setGender] = useState('')
   const [openOnly, setOpenOnly] = useState(false)
 
   const days = useMemo(
@@ -37,17 +44,29 @@ export default function PortalClassBrowser({ classes, students }: { classes: Bro
     () => Array.from(new Set(classes.map(c => c.style).filter(Boolean) as string[])).sort(),
     [classes],
   )
+  const genders = useMemo(
+    () => Array.from(new Set(
+      classes.map(c => (c.gender ?? '').toLowerCase()).filter(g => g && !OPEN_GENDERS.has(g)),
+    )).sort(),
+    [classes],
+  )
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase()
+    const ageNum = age.trim() === '' ? null : Number(age)
     return classes.filter(c => {
       if (needle && !(`${c.name} ${c.instructorName ?? ''}`.toLowerCase().includes(needle))) return false
       if (day && c.day_of_week !== day) return false
       if (style && c.style !== style) return false
+      if (gender && (c.gender ?? '').toLowerCase() !== gender) return false
+      if (ageNum != null && Number.isFinite(ageNum)) {
+        if (c.age_min != null && ageNum < c.age_min) return false
+        if (c.age_max != null && ageNum > c.age_max) return false
+      }
       if (openOnly && c.spotsLeft != null && c.spotsLeft <= 0) return false
       return true
     })
-  }, [classes, q, day, style, openOnly])
+  }, [classes, q, day, style, age, gender, openOnly])
 
   return (
     <div>
@@ -69,6 +88,20 @@ export default function PortalClassBrowser({ classes, students }: { classes: Bro
           <select value={style} onChange={e => setStyle(e.target.value)} className={selectCls}>
             <option value="">All styles</option>
             {styles.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        )}
+        <input
+          type="number"
+          min={0}
+          value={age}
+          onChange={e => setAge(e.target.value)}
+          placeholder="Dancer age"
+          className={`${selectCls} w-28`}
+        />
+        {genders.length > 0 && (
+          <select value={gender} onChange={e => setGender(e.target.value)} className={`${selectCls} capitalize`}>
+            <option value="">Any gender</option>
+            {genders.map(g => <option key={g} value={g} className="capitalize">{g}</option>)}
           </select>
         )}
         <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer">

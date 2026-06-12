@@ -2,6 +2,7 @@ import { getPortalViewer } from '@/lib/portal-viewer'
 import { getParentPortalSettings } from '@/lib/portal-settings'
 import { formatDate, cn } from '@/lib/utils'
 import PortalCampBrowser from '@/components/portal/PortalCampBrowser'
+import PortalPendingList from '@/components/portal/PortalPendingList'
 import SectionHead from '@/components/admin/SectionHead'
 
 const STATUS_TAG: Record<string, string> = {
@@ -79,6 +80,9 @@ export default async function ParentCampsPage() {
     return s ? `${s.first_name} ${s.last_name}` : 'Dancer'
   }
 
+  const myConfirmed = (myRegs ?? []).filter((r: any) => r.status !== 'pending')
+  const pendingCamps = (myRegs ?? []).filter((r: any) => r.status === 'pending')
+
   return (
     <div>
       <div className="mb-7">
@@ -94,11 +98,11 @@ export default async function ParentCampsPage() {
       </div>
 
       <SectionHead label="Your camps" />
-      {!myRegs?.length ? (
+      {!myConfirmed.length ? (
         <p className="muted" style={{ fontSize: 13 }}>No camp registrations yet.</p>
       ) : (
         <div className="tight-list">
-          {myRegs.map((r: any) => (
+          {myConfirmed.map((r: any) => (
             <div key={r.id} className="tl-row">
               <div className="tl-lead">
                 <div className="t">{r.camp ? formatDate(r.camp.start_date).replace(/, \d{4}$/, '') : ''}</div>
@@ -117,6 +121,19 @@ export default async function ParentCampsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {pendingCamps.length > 0 && (
+        <>
+          <hr className="section-rule" />
+          <SectionHead label="Pending approval" />
+          <PortalPendingList items={pendingCamps.map((r: any) => ({
+            id: r.id,
+            kind: 'camp' as const,
+            title: r.camp?.name ?? 'Camp',
+            subtitle: studentName(r.student_id),
+          }))} />
+        </>
       )}
 
       <hr className="section-rule" />

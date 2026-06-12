@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'node:crypto'
 import { logActivity } from '@/lib/activity'
 import { requireStaff } from '@/lib/require-staff'
 
@@ -14,9 +15,11 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient()
 
+  // Strong throwaway password (CSPRNG). The parent sets their own via the portal
+  // invite / "Forgot password" — they never use this value.
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
-    password: Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2) + '!A1',
+    password: randomBytes(24).toString('base64url') + '!A1',
     email_confirm: true,
     user_metadata: { first_name, last_name, role: 'parent' },
   })

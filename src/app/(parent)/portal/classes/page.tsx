@@ -2,6 +2,7 @@ import { getPortalViewer } from '@/lib/portal-viewer'
 import { getParentPortalSettings } from '@/lib/portal-settings'
 import { formatTime, cn } from '@/lib/utils'
 import PortalClassBrowser from '@/components/portal/PortalClassBrowser'
+import PortalPendingList from '@/components/portal/PortalPendingList'
 import SectionHead from '@/components/admin/SectionHead'
 
 const NO_ID = '00000000-0000-0000-0000-000000000000'
@@ -37,10 +38,11 @@ export default async function ParentClassesPage() {
           id, status, student_id,
           class:classes(name, day_of_week, start_time, end_time, monthly_tuition,
             instructor:instructors(first_name, last_name), room:rooms(name))
-        `).in('student_id', studentIds).in('status', ['active', 'waitlisted'])
+        `).in('student_id', studentIds).in('status', ['active', 'waitlisted', 'pending'])
       : Promise.resolve({ data: [] as any[] }),
     db.from('classes').select(`
       id, name, day_of_week, start_time, end_time, monthly_tuition, max_students,
+      age_min, age_max, gender,
       class_type:class_types(color, style),
       instructor:instructors(first_name, last_name)
     `)
@@ -68,6 +70,9 @@ export default async function ParentClassesPage() {
     return s ? `${s.first_name} ${s.last_name}` : ''
   }
 
+  const enrolled = (enrollments ?? []).filter((e: any) => e.status !== 'pending')
+  const pendingClasses = (enrollments ?? []).filter((e: any) => e.status === 'pending')
+
   return (
     <div>
       <div className="mb-7">
@@ -76,18 +81,18 @@ export default async function ParentClassesPage() {
           Your dancers' schedule.
         </h1>
         <p className="mt-1.5" style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink-2)' }}>
-          {enrollments?.length
-            ? `${enrollments.length} active enrollment${enrollments.length === 1 ? '' : 's'} across ${students.length} dancer${students.length === 1 ? '' : 's'}.`
+          {enrolled.length
+            ? `${enrolled.length} active enrollment${enrolled.length === 1 ? '' : 's'} across ${students.length} dancer${students.length === 1 ? '' : 's'}.`
             : 'No active enrollments yet — browse open classes below.'}
         </p>
       </div>
 
       <SectionHead label="Enrolled classes" />
-      {!enrollments?.length ? (
+      {!enrolled.length ? (
         <p className="muted" style={{ fontSize: 13 }}>No active enrollments.</p>
       ) : (
         <div className="tight-list">
-          {enrollments.map((e: any) => (
+          {enrolled.map((e: any) => (
             <div key={e.id} className="tl-row">
               <div className="tl-lead">
                 <div className="t" style={{ textTransform: 'capitalize' }}>{e.class?.day_of_week?.slice(0, 3)}</div>
@@ -110,6 +115,19 @@ export default async function ParentClassesPage() {
         </div>
       )}
 
+      {pendingClasses.length > 0 && (
+        <>
+          <hr className="section-rule" />
+          <SectionHead label="Pending approval" />
+          <PortalPendingList items={pendingClasses.map((e: any) => ({
+            id: e.id,
+            kind: 'class' as const,
+            title: e.class?.name ?? 'Class',
+            subtitle: `${studentName(e.student_id)}${e.class?.day_of_week ? ` · ${e.class.day_of_week}` : ''}`,
+          }))} />
+        </>
+      )}
+
       <hr className="section-rule" />
 
       <SectionHead label="Open for registration" />
@@ -126,6 +144,9 @@ export default async function ParentClassesPage() {
             monthly_tuition: settings.show_tuition ? Number(cls.monthly_tuition) : null,
             color: cls.class_type?.color ?? '#7c3aed',
             style: cls.class_type?.style ?? null,
+            age_min: cls.age_min,
+            age_max: cls.age_max,
+            gender: cls.gender,
             instructorName: settings.show_instructors && cls.instructor
               ? `${cls.instructor.first_name} ${cls.instructor.last_name}`
               : null,

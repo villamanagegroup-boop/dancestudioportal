@@ -172,8 +172,13 @@ function AddCardButtons({ onCancel, setError }: { onCancel: () => void; setError
     const state = await cardFieldsForm.getState()
     if (!state.isFormValid) { setError('Please complete all card fields.'); return }
     setBusy(true); setError(null)
+    // The real outcome is reported by the provider's onApprove (success → onDone)
+    // and onError (card declined/invalid). submit() itself can reject *after* a
+    // successful vault because onApprove unmounts this form mid-submit — so a
+    // rejection here is NOT a reliable failure signal. Swallow it to avoid the
+    // false "Could not save card" message.
     try { await cardFieldsForm.submit() }
-    catch { setError('Could not save card.') }
+    catch { /* outcome handled by onApprove / onError */ }
     finally { setBusy(false) }
   }
   return (

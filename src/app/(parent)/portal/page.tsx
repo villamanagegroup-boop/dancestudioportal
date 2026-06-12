@@ -66,7 +66,7 @@ export default async function PortalPage() {
       <div className="mb-7">
         <p className="eyebrow" style={{ color: 'var(--ink-3)' }}>My Portal</p>
         <h1 className="h1 mt-2" style={{ fontSize: 28, letterSpacing: '-0.02em' }}>
-          Hi, <span className="grad-text">{firstName}</span>.
+          Hi, <span className="grad-text">{firstName || 'there'}</span>!
         </h1>
         <p className="mt-1.5" style={{ fontSize: 15, fontWeight: 500, color: 'var(--ink-2)' }}>
           {outstanding > 0

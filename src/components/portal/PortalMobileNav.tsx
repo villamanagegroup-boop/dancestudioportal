@@ -55,7 +55,7 @@ export default function PortalMobileNav({ items, title = 'Menu' }: { items: Port
   }
 
   return (
-    <div className="sm:hidden">
+    <div className="lg:hidden">
       <button
         onClick={() => setOpen(true)}
         aria-label="Open menu"

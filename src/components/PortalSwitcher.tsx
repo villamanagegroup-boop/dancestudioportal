@@ -34,7 +34,7 @@ export default function PortalSwitcher({ available, current }: Props) {
     <div className="relative">
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-gray-600 bg-white/70 border border-gray-200 hover:bg-white transition-colors"
+        className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-gray-600 bg-white/70 border border-gray-200 hover:bg-white transition-colors whitespace-nowrap"
       >
         <span className="text-gray-400">Viewing:</span>
         <span className="text-gray-900">{cur?.label ?? current}</span>

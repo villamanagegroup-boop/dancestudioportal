@@ -40,8 +40,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="glass-strong p-8">
-      <h2 className="h2 mb-6" style={{ color: 'var(--ink-1)' }}>Sign In</h2>
+    <div className="glass-strong px-8 pb-8 pt-6">
       {error && (
         <div className="mb-4 p-3 rounded-lg text-sm" style={{ background: 'rgba(220,38,38,.10)', border: '1px solid rgba(220,38,38,.25)', color: '#b91c1c' }}>{error}</div>
       )}

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomBytes } from 'node:crypto'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ENTITY_CONFIGS, type EntityKey } from '@/lib/import-configs'
@@ -73,7 +74,9 @@ export async function POST(request: NextRequest) {
 type Admin = ReturnType<typeof createAdminClient>
 
 function tempPassword() {
-  return 'Welcome' + Math.random().toString(36).slice(2, 8) + '!'
+  // CSPRNG temp password; the imported parent resets it via the portal invite /
+  // "Forgot password" and never types this value.
+  return 'Welcome' + randomBytes(12).toString('base64url') + '!'
 }
 
 function parseDate(s: string | undefined): string | null {

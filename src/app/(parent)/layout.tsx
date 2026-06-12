@@ -54,24 +54,24 @@ export default async function ParentLayout({ children }: { children: React.React
         <ViewAsBar kind="g" people={people} currentId={viewer.effectiveId} />
       )}
       <header className="glass sticky top-0 z-10 rounded-none border-x-0 border-t-0">
-        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Logo size={28} rounded={8} />
-            <span className="font-semibold text-gray-900 text-sm">Capital Core</span>
+            <span className="font-semibold text-gray-900 text-sm whitespace-nowrap">Capital Core</span>
           </div>
-          <nav className="hidden sm:flex flex-1 items-center justify-center gap-1 lg:gap-2 px-4 lg:px-8">
+          <nav className="hidden lg:flex flex-1 flex-nowrap items-center justify-center gap-0.5 xl:gap-1.5 px-3">
             {navItems.map(({ href, icon: Icon, label }) => (
-              <Link key={href} href={href} className="flex items-center gap-1.5 px-3 lg:px-4 py-1.5 rounded-lg text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors">
+              <Link key={href} href={href} className="flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-lg text-sm text-gray-600 whitespace-nowrap hover:text-gray-900 hover:bg-gray-100 transition-colors">
                 <Icon size={15} />
                 {label}
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-shrink-0">
             <PortalSwitcher available={available} current="parent" />
-            <Link href="/login" className="hidden sm:flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700">
+            <Link href="/login" className="hidden lg:flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 whitespace-nowrap">
               <LogOut size={15} />
-              <span className="hidden sm:inline">Sign out</span>
+              <span>Sign out</span>
             </Link>
             <PortalMobileNav
               items={[
