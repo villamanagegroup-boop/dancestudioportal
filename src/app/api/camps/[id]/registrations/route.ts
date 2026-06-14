@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { logActivity } from '@/lib/activity'
 import { notify } from '@/lib/notify'
 import { requireStaff } from '@/lib/require-staff'
+import { seedCareFromWebsite } from '@/lib/camp-care-capture'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireStaff()
@@ -68,6 +69,33 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { data: student } = await supabase
     .from('students').select('first_name, last_name').eq('id', student_id).maybeSingle()
   const studentName = student ? `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() : null
+
+  // Best-effort: pull any before/after care this camper selected on the public
+  // registration form into structured camp_care rows. Never blocks the
+  // registration if it fails or finds nothing.
+  if (studentName) {
+    try {
+      const { data: link } = await supabase
+        .from('guardian_students')
+        .select('guardian:profiles(email)')
+        .eq('student_id', student_id)
+        .eq('is_primary', true)
+        .maybeSingle()
+      const guardianEmail =
+        (link?.guardian as { email?: string } | null)?.email ?? null
+      await seedCareFromWebsite(supabase, {
+        regId: data.id,
+        campId,
+        campName: camp.name,
+        studentId: student_id,
+        studentName,
+        guardianEmail,
+      })
+    } catch {
+      // ignore — care can always be imported/added manually later
+    }
+  }
+
   await logActivity({
     action: isFull ? 'camp_registration.waitlisted' : 'camp_registration.created',
     targetTable: 'camp_registrations',

@@ -5,13 +5,15 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { UserPlus, Trash2 } from 'lucide-react'
 import { formatCurrency, formatDate, formatAge } from '@/lib/utils'
-import type { CampRegistration, StudentOption } from '@/components/admin/CampDetail'
+import CampCareCell from '@/components/admin/CampCareCell'
+import type { CampRegistration, CampCare, StudentOption } from '@/components/admin/CampDetail'
 
 interface Props {
   campId: string
   maxCapacity: number
   price: number
   registrations: CampRegistration[]
+  care: CampCare[]
   students: StudentOption[]
 }
 
@@ -26,17 +28,29 @@ const STATUS_COLOR: Record<string, string> = {
   completed: 'bg-blue-100 text-blue-700',
 }
 
-export default function CampRegistrationsTab({ campId, maxCapacity, price, registrations, students }: Props) {
+export default function CampRegistrationsTab({ campId, maxCapacity, price, registrations, care, students }: Props) {
   const router = useRouter()
   const [selected, setSelected] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState('')
 
+  // Care lines grouped by registration.
+  const careByReg = new Map<string, CampCare[]>()
+  for (const c of care) {
+    const list = careByReg.get(c.registration_id) ?? []
+    list.push(c)
+    careByReg.set(c.registration_id, list)
+  }
+  const carePaid = care.filter(c => c.paid).reduce((s, c) => s + Number(c.amount || 0), 0)
+  const careDue = care.filter(c => !c.paid).reduce((s, c) => s + Number(c.amount || 0), 0)
+
   const registeredCount = registrations.filter(r => r.status === 'registered').length
   const waitlistedCount = registrations.filter(r => r.status === 'waitlisted').length
-  const collected = registrations.reduce((s, r) => s + Number(r.amount_paid || 0), 0)
+  // Collected = camp fees paid + care paid. Outstanding = unpaid camp fees + care due.
+  const collected = registrations.reduce((s, r) => s + Number(r.amount_paid || 0), 0) + carePaid
   const expected = registeredCount * price
+  const outstanding = Math.max(0, expected - registrations.reduce((s, r) => s + Number(r.amount_paid || 0), 0)) + careDue
   const fillPct = maxCapacity > 0 ? Math.min(100, Math.round((registeredCount / maxCapacity) * 100)) : 0
 
   const takenIds = new Set(
@@ -131,8 +145,11 @@ export default function CampRegistrationsTab({ campId, maxCapacity, price, regis
           <div className="text-xs text-gray-500 uppercase tracking-wide mt-0.5">Collected</div>
         </div>
         <div className="bg-white rounded-xl border border-gray-100 shadow-sm px-4 py-3">
-          <div className="text-2xl font-semibold text-gray-900">{formatCurrency(Math.max(0, expected - collected))}</div>
+          <div className="text-2xl font-semibold text-gray-900">{formatCurrency(outstanding)}</div>
           <div className="text-xs text-gray-500 uppercase tracking-wide mt-0.5">Outstanding</div>
+          {careDue > 0 && (
+            <div className="text-[11px] text-amber-600 mt-0.5">incl. {formatCurrency(careDue)} care</div>
+          )}
         </div>
       </div>
 
@@ -175,6 +192,7 @@ export default function CampRegistrationsTab({ campId, maxCapacity, price, regis
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Payment</th>
                   <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Paid</th>
+                  <th className="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase">Care</th>
                   <th className="px-5 py-3" />
                 </tr>
               </thead>
@@ -233,6 +251,9 @@ export default function CampRegistrationsTab({ campId, maxCapacity, price, regis
                           }}
                           className="w-20 text-xs rounded border border-gray-200 px-1.5 py-1 text-gray-700 focus:outline-none focus:border-studio-500 disabled:opacity-50"
                         />
+                      </td>
+                      <td className="px-5 py-3 align-top">
+                        <CampCareCell campId={campId} regId={r.id} lines={careByReg.get(r.id) ?? []} />
                       </td>
                       <td className="px-5 py-3 text-right">
                         <button

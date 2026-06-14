@@ -10,6 +10,7 @@ export default async function CampDetailPage({ params }: { params: Promise<{ id:
   const [
     { data: camp },
     { data: registrations },
+    { data: care },
     { data: attendance },
     { data: itinerary },
     { data: files },
@@ -24,6 +25,10 @@ export default async function CampDetailPage({ params }: { params: Promise<{ id:
       id, status, payment_status, amount_paid, waitlist_position, notes, archived, registered_at,
       student:students(id, first_name, last_name, date_of_birth)
     `).eq('camp_id', id).order('registered_at'),
+    supabase.from('camp_care').select(`
+      id, registration_id, camp_id, student_id, kind, care_date, days, hours, rate,
+      amount, care_time, paid, paid_at, source, notes
+    `).eq('camp_id', id).order('kind').order('care_date', { nullsFirst: false }),
     supabase.from('camp_attendance').select('student_id, attend_date, present').eq('camp_id', id),
     supabase.from('camp_itinerary').select('*').eq('camp_id', id)
       .order('day_date').order('sort_order'),
@@ -51,6 +56,7 @@ export default async function CampDetailPage({ params }: { params: Promise<{ id:
         <CampDetail
           camp={camp}
           registrations={(registrations ?? []) as any}
+          care={(care ?? []) as any}
           attendance={(attendance ?? []) as any}
           itinerary={(itinerary ?? []) as any}
           files={filesWithUrls as any}

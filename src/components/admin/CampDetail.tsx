@@ -35,6 +35,24 @@ export interface CampRegistration {
   student: StudentOption | null
 }
 
+export interface CampCare {
+  id: string
+  registration_id: string
+  camp_id: string
+  student_id: string
+  kind: 'before' | 'after'
+  care_date: string | null
+  days: number
+  hours: number
+  rate: number
+  amount: number
+  care_time: string | null
+  paid: boolean
+  paid_at: string | null
+  source: string
+  notes: string | null
+}
+
 export interface CampAttendanceRec {
   student_id: string
   attend_date: string
@@ -66,6 +84,7 @@ export interface CampFile {
 interface Props {
   camp: any
   registrations: CampRegistration[]
+  care: CampCare[]
   attendance: CampAttendanceRec[]
   itinerary: CampItineraryItem[]
   files: CampFile[]
@@ -86,7 +105,7 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
 ]
 
 export default function CampDetail({
-  camp, registrations, attendance, itinerary, files, instructors, rooms, students,
+  camp, registrations, care, attendance, itinerary, files, instructors, rooms, students,
 }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('overview')
@@ -199,6 +218,7 @@ export default function CampDetail({
           maxCapacity={camp.max_capacity}
           price={Number(camp.price)}
           registrations={registrations}
+          care={care}
           students={students}
         />
       )}
