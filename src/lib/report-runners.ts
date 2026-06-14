@@ -680,7 +680,12 @@ async function camperInfo(): Promise<ReportResult> {
     .from('camp_registrations')
     .select(`
       camp:camps(name),
-      student:students(first_name, last_name, date_of_birth, emergency_contact_name, emergency_contact_phone, medical_notes)
+      student:students(
+        first_name, last_name, date_of_birth,
+        allergies, medications, medical_conditions, medical_notes,
+        emergency_contact_name, emergency_contact_phone,
+        guardian_students(is_primary, guardian:profiles(first_name, last_name, phone, email))
+      )
     `)
     .eq('status', 'registered')
   return {
@@ -688,18 +693,34 @@ async function camperInfo(): Promise<ReportResult> {
       { key: 'camp', label: 'Camp' },
       { key: 'student', label: 'Student' },
       { key: 'age', label: 'Age', align: 'right' },
+      { key: 'parent', label: 'Parent/Guardian' },
+      { key: 'parent_phone', label: 'Parent Phone' },
+      { key: 'parent_email', label: 'Parent Email' },
+      { key: 'allergies', label: 'Allergies' },
+      { key: 'medications', label: 'Medications' },
+      { key: 'conditions', label: 'Medical Conditions' },
       { key: 'emergency', label: 'Emergency Contact' },
       { key: 'emergency_phone', label: 'Emergency Phone' },
       { key: 'medical', label: 'Medical Notes' },
     ],
-    rows: (data ?? []).map((r: any) => ({
-      camp: r.camp?.name ?? '',
-      student: r.student ? `${r.student.last_name}, ${r.student.first_name}` : '',
-      age: r.student?.date_of_birth ? ageYears(r.student.date_of_birth) : '',
-      emergency: r.student?.emergency_contact_name ?? '',
-      emergency_phone: r.student?.emergency_contact_phone ?? '',
-      medical: r.student?.medical_notes ?? '',
-    })),
+    rows: (data ?? []).map((r: any) => {
+      const links = r.student?.guardian_students ?? []
+      const g = (links.find((l: any) => l.is_primary) || links[0])?.guardian ?? null
+      return {
+        camp: r.camp?.name ?? '',
+        student: r.student ? `${r.student.last_name}, ${r.student.first_name}` : '',
+        age: r.student?.date_of_birth ? ageYears(r.student.date_of_birth) : '',
+        parent: g ? `${g.first_name ?? ''} ${g.last_name ?? ''}`.trim() : '',
+        parent_phone: g?.phone ?? '',
+        parent_email: g?.email ?? '',
+        allergies: r.student?.allergies ?? '',
+        medications: r.student?.medications ?? '',
+        conditions: r.student?.medical_conditions ?? '',
+        emergency: r.student?.emergency_contact_name ?? '',
+        emergency_phone: r.student?.emergency_contact_phone ?? '',
+        medical: r.student?.medical_notes ?? '',
+      }
+    }),
   }
 }
 

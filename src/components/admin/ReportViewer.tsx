@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Download, FileSpreadsheet, Filter, Clock } from 'lucide-react'
-import { cn, formatCurrency } from '@/lib/utils'
-import type { ReportColumn, ReportResult, ReportFilters } from '@/lib/report-runners'
+import { ArrowLeft, Download, FileSpreadsheet, Filter, Clock, Printer, Table2 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { downloadCSV, printReport, exportToGoogleSheets, formatCellValue, type ExportColumn } from '@/lib/export'
+import type { ReportResult, ReportFilters } from '@/lib/report-runners'
 import type { ReportDef } from '@/lib/reports'
 
 interface Props {
@@ -14,27 +15,12 @@ interface Props {
   result: ReportResult | null
 }
 
-function formatCell(v: any, format: ReportColumn['format']) {
-  if (v == null || v === '') return ''
-  if (format === 'date') return new Date(v + (String(v).length === 10 ? 'T00:00:00' : '')).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  if (format === 'datetime') return new Date(v).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-  if (format === 'currency') return formatCurrency(Number(v))
-  if (format === 'number') return Number(v).toLocaleString()
-  return String(v)
-}
-
-function csvCell(v: any) {
-  if (v == null) return ''
-  const s = String(v)
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`
-  return s
-}
-
 export default function ReportViewer({ def, filters, result }: Props) {
   const router = useRouter()
   const [from, setFrom] = useState(filters.from ?? '')
   const [to, setTo] = useState(filters.to ?? '')
   const [q, setQ] = useState(filters.q ?? '')
+  const [notice, setNotice] = useState('')
 
   function applyFilters(e: React.FormEvent) {
     e.preventDefault()
@@ -51,21 +37,16 @@ export default function ReportViewer({ def, filters, result }: Props) {
     router.push(`/reports/${def.id}`)
   }
 
-  function exportCsv() {
+  const exportCols = (result?.columns ?? []) as ExportColumn[]
+  const fileName = `${def.id}-${def.title}`
+
+  async function onSheets() {
     if (!result) return
-    const lines = [
-      result.columns.map(c => csvCell(c.label)).join(','),
-      ...result.rows.map(r => result.columns.map(c => csvCell(r[c.key])).join(',')),
-    ]
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${def.id}-${def.title.replace(/\s+/g, '_').toLowerCase()}.csv`
-    document.body.appendChild(a)
-    a.click()
-    a.remove()
-    URL.revokeObjectURL(url)
+    const ok = await exportToGoogleSheets(exportCols, result.rows)
+    setNotice(ok
+      ? 'Copied to clipboard — paste into the new Google Sheet tab (Ctrl/Cmd + V).'
+      : 'Opened a new Google Sheet. Copy failed — use CSV export and File ▸ Import instead.')
+    setTimeout(() => setNotice(''), 9000)
   }
 
   const inputCls = 'px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-studio-500'
@@ -77,7 +58,7 @@ export default function ReportViewer({ def, filters, result }: Props) {
         <h2 className="text-lg font-semibold text-gray-900 mb-1">{def.title}</h2>
         <p className="text-sm text-gray-500 mb-4">{def.description}</p>
         <span className="inline-block text-xs font-medium px-2 py-1 rounded-full bg-amber-50 text-amber-700">
-          Coming soon — this report needs a module that isn't built yet.
+          Coming soon — this report needs a module that is not built yet.
         </span>
         <div className="mt-6">
           <Link href="/reports" className="text-sm font-medium text-studio-600 hover:text-studio-700">← Back to Reports</Link>
@@ -126,14 +107,34 @@ export default function ReportViewer({ def, filters, result }: Props) {
               {result?.notes && <p className="text-xs text-gray-400 mt-0.5">{result.notes}</p>}
             </div>
           </div>
-          <button
-            onClick={exportCsv}
-            disabled={rows.length === 0}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            <Download size={14} /> Export CSV
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => downloadCSV(fileName, exportCols, rows)}
+              disabled={rows.length === 0}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              <Download size={14} /> CSV
+            </button>
+            <button
+              onClick={() => printReport({ title: def.title, subtitle: def.description, columns: exportCols, rows })}
+              disabled={rows.length === 0}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            >
+              <Printer size={14} /> Print / PDF
+            </button>
+            <button
+              onClick={onSheets}
+              disabled={rows.length === 0}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-studio-600 text-white text-sm font-medium hover:bg-studio-700 disabled:opacity-50"
+            >
+              <Table2 size={14} /> Google Sheets
+            </button>
+          </div>
         </div>
+
+        {notice && (
+          <div className="mx-5 mt-4 p-3 rounded-lg bg-studio-50 border border-studio-200 text-studio-800 text-sm">{notice}</div>
+        )}
 
         {rows.length === 0 ? (
           <div className="py-16 text-center text-sm text-gray-400">No data for the selected filters.</div>
@@ -164,7 +165,7 @@ export default function ReportViewer({ def, filters, result }: Props) {
                           c.format === 'currency' || c.format === 'number' ? 'tabular-nums' : '',
                         )}
                       >
-                        {formatCell(r[c.key], c.format)}
+                        {formatCellValue(r[c.key], c.format)}
                       </td>
                     ))}
                   </tr>

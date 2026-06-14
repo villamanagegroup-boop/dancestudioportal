@@ -11,12 +11,14 @@ export default async function CampDetailPage({ params }: { params: Promise<{ id:
     { data: camp },
     { data: registrations },
     { data: care },
+    { data: exportRecords },
     { data: attendance },
     { data: itinerary },
     { data: files },
     { data: instructors },
     { data: rooms },
     { data: students },
+    { data: allCamps },
   ] = await Promise.all([
     supabase.from('camps').select(`
       *, instructor:instructors(first_name, last_name), room:rooms(name)
@@ -29,6 +31,18 @@ export default async function CampDetailPage({ params }: { params: Promise<{ id:
       id, registration_id, camp_id, student_id, kind, care_date, days, hours, rate,
       amount, care_time, paid, paid_at, source, notes
     `).eq('camp_id', id).order('kind').order('care_date', { nullsFirst: false }),
+    supabase.from('camp_registrations').select(`
+      id, status, payment_status,
+      student:students(
+        id, first_name, last_name, date_of_birth,
+        allergies, medications, medical_conditions, medical_notes,
+        doctor_name, doctor_phone, emergency_contact_name, emergency_contact_phone,
+        guardian_students(
+          is_primary, relationship,
+          guardian:profiles(first_name, last_name, phone, email, address_street, address_city, address_state, address_zip)
+        )
+      )
+    `).eq('camp_id', id).neq('status', 'cancelled').order('registered_at'),
     supabase.from('camp_attendance').select('student_id, attend_date, present').eq('camp_id', id),
     supabase.from('camp_itinerary').select('*').eq('camp_id', id)
       .order('day_date').order('sort_order'),
@@ -38,6 +52,8 @@ export default async function CampDetailPage({ params }: { params: Promise<{ id:
     supabase.from('rooms').select('id, name').eq('active', true).order('name'),
     supabase.from('students').select('id, first_name, last_name, date_of_birth')
       .eq('active', true).order('last_name'),
+    supabase.from('camps').select('id, name, start_date, end_date')
+      .eq('active', true).order('start_date'),
   ])
 
   if (!camp) notFound()
@@ -58,11 +74,13 @@ export default async function CampDetailPage({ params }: { params: Promise<{ id:
           registrations={(registrations ?? []) as any}
           care={(care ?? []) as any}
           attendance={(attendance ?? []) as any}
+          exportRecords={(exportRecords ?? []) as any}
           itinerary={(itinerary ?? []) as any}
           files={filesWithUrls as any}
           instructors={instructors ?? []}
           rooms={rooms ?? []}
           students={students ?? []}
+          allCamps={(allCamps ?? []) as any}
         />
       </div>
     </div>

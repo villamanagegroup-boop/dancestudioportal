@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Archive, ArchiveRestore, Trash2, Settings, Users, ClipboardCheck,
-  CalendarClock, MessageSquare, FolderOpen,
+  CalendarClock, MessageSquare, FolderOpen, FileDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import CampOverviewTab from '@/components/admin/CampOverviewTab'
@@ -13,6 +13,7 @@ import CampAttendanceTab from '@/components/admin/CampAttendanceTab'
 import CampItineraryTab from '@/components/admin/CampItineraryTab'
 import CampCommsTab from '@/components/admin/CampCommsTab'
 import CampFilesTab from '@/components/admin/CampFilesTab'
+import CampExportPanel, { type CampExportRecord } from '@/components/admin/CampExportPanel'
 
 interface Option { id: string; name: string }
 interface InstructorOption { id: string; first_name: string; last_name: string }
@@ -86,14 +87,16 @@ interface Props {
   registrations: CampRegistration[]
   care: CampCare[]
   attendance: CampAttendanceRec[]
+  exportRecords: CampExportRecord[]
   itinerary: CampItineraryItem[]
   files: CampFile[]
   instructors: InstructorOption[]
   rooms: Option[]
   students: StudentOption[]
+  allCamps: { id: string; name: string; start_date: string; end_date: string }[]
 }
 
-type Tab = 'overview' | 'registrations' | 'attendance' | 'itinerary' | 'communication' | 'files'
+type Tab = 'overview' | 'registrations' | 'attendance' | 'itinerary' | 'communication' | 'files' | 'export'
 
 const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'overview', label: 'Overview', icon: <Settings size={15} /> },
@@ -102,10 +105,11 @@ const TABS: { key: Tab; label: string; icon: React.ReactNode }[] = [
   { key: 'itinerary', label: 'Itinerary', icon: <CalendarClock size={15} /> },
   { key: 'communication', label: 'Communication', icon: <MessageSquare size={15} /> },
   { key: 'files', label: 'Files', icon: <FolderOpen size={15} /> },
+  { key: 'export', label: 'Export / Print', icon: <FileDown size={15} /> },
 ]
 
 export default function CampDetail({
-  camp, registrations, care, attendance, itinerary, files, instructors, rooms, students,
+  camp, registrations, care, attendance, exportRecords, itinerary, files, instructors, rooms, students, allCamps,
 }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('overview')
@@ -220,6 +224,7 @@ export default function CampDetail({
           registrations={registrations}
           care={care}
           students={students}
+          moveTargets={allCamps.filter(c => c.id !== camp.id)}
         />
       )}
       {tab === 'attendance' && (
@@ -241,6 +246,13 @@ export default function CampDetail({
       )}
       {tab === 'communication' && <CampCommsTab campId={camp.id} />}
       {tab === 'files' && <CampFilesTab campId={camp.id} files={files} />}
+      {tab === 'export' && (
+        <CampExportPanel
+          camp={{ id: camp.id, name: camp.name, start_date: camp.start_date, end_date: camp.end_date }}
+          records={exportRecords}
+          attendance={attendance}
+        />
+      )}
     </div>
   )
 }

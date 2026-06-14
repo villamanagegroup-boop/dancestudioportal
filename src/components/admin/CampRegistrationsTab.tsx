@@ -3,10 +3,12 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { UserPlus, Trash2 } from 'lucide-react'
+import { UserPlus, Trash2, ArrowRightLeft } from 'lucide-react'
 import { formatCurrency, formatDate, formatAge } from '@/lib/utils'
 import CampCareCell from '@/components/admin/CampCareCell'
 import type { CampRegistration, CampCare, StudentOption } from '@/components/admin/CampDetail'
+
+interface MoveTarget { id: string; name: string; start_date: string; end_date: string }
 
 interface Props {
   campId: string
@@ -15,6 +17,7 @@ interface Props {
   registrations: CampRegistration[]
   care: CampCare[]
   students: StudentOption[]
+  moveTargets: MoveTarget[]
 }
 
 const STATUSES = ['pending', 'registered', 'waitlisted', 'cancelled', 'completed']
@@ -28,12 +31,36 @@ const STATUS_COLOR: Record<string, string> = {
   completed: 'bg-blue-100 text-blue-700',
 }
 
-export default function CampRegistrationsTab({ campId, maxCapacity, price, registrations, care, students }: Props) {
+export default function CampRegistrationsTab({ campId, maxCapacity, price, registrations, care, students, moveTargets }: Props) {
   const router = useRouter()
   const [selected, setSelected] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [error, setError] = useState('')
+  const [movingId, setMovingId] = useState<string | null>(null)
+
+  async function move(regId: string, targetCampId: string) {
+    if (!targetCampId) return
+    setBusyId(regId)
+    setError('')
+    try {
+      const res = await fetch(`/api/camps/${campId}/registrations/${regId}/move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ camp_id: targetCampId }),
+      })
+      if (!res.ok) {
+        const json = await res.json().catch(() => ({}))
+        throw new Error(json.error ?? 'Move failed')
+      }
+      setMovingId(null)
+      router.refresh()
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setBusyId(null)
+    }
+  }
 
   // Care lines grouped by registration.
   const careByReg = new Map<string, CampCare[]>()
@@ -255,15 +282,42 @@ export default function CampRegistrationsTab({ campId, maxCapacity, price, regis
                       <td className="px-5 py-3 align-top">
                         <CampCareCell campId={campId} regId={r.id} lines={careByReg.get(r.id) ?? []} />
                       </td>
-                      <td className="px-5 py-3 text-right">
-                        <button
-                          onClick={() => remove(r.id, name)}
-                          disabled={busyId === r.id}
-                          className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
-                          aria-label="Remove from camp"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center justify-end gap-1">
+                          {movingId === r.id ? (
+                            <select
+                              autoFocus
+                              defaultValue=""
+                              disabled={busyId === r.id}
+                              onChange={e => move(r.id, e.target.value)}
+                              onBlur={() => setMovingId(null)}
+                              className="text-xs rounded border border-gray-200 px-1.5 py-1 text-gray-700 focus:outline-none focus:border-studio-500 disabled:opacity-50 max-w-44"
+                            >
+                              <option value="" disabled>Move to week…</option>
+                              {moveTargets.map(t => (
+                                <option key={t.id} value={t.id}>{t.name}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <button
+                              onClick={() => setMovingId(r.id)}
+                              disabled={busyId === r.id || moveTargets.length === 0}
+                              className="p-1.5 rounded-lg text-gray-400 hover:text-studio-600 hover:bg-studio-50 disabled:opacity-50"
+                              aria-label="Move to another week"
+                              title="Move to another week"
+                            >
+                              <ArrowRightLeft size={15} />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => remove(r.id, name)}
+                            disabled={busyId === r.id}
+                            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 disabled:opacity-50"
+                            aria-label="Remove from camp"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
