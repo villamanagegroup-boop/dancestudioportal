@@ -22,7 +22,12 @@ const CONFIG = {
   BUTTON_URL: 'https://www.capitalcoredance.com/summer-classes',
   BUTTON_LABEL: 'Register for Summer Classes',
 
+  // Adult Summer Series (Mondays, starts Jun 29) — promoted in the same email.
+  ADULT_URL: 'https://www.capitalcoredance.com/adult-summer-series',
+  ADULT_LABEL: 'Register for the Adult Summer Series',
+
   FLYER_PATH: 'C:/Users/hicks/Downloads/ChatGPT Image Jun 22, 2026, 02_43_18 PM.png',
+  ADULT_FLYER_PATH: 'C:/Users/hicks/Downloads/ChatGPT Image Jun 19, 2026, 09_25_31 AM.png',
   LOGO_PATH: 'C:/Users/hicks/Downloads/Images/capital core dance challenge (21).png',
 }
 // --------------------------------------------------------------------------
@@ -36,7 +41,7 @@ const day = (name, items) => `
     ${items.map((i) => `<li>${i}</li>`).join('')}
   </ul>`
 
-function buildHtml(c, flyerCid, logoCid) {
+function buildHtml(c, flyerCid, logoCid, adultCid) {
   return `
 <div style="margin:0;padding:0;background:#faf7f2;">
 <div style="max-width:600px;margin:0 auto;padding:24px 20px;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#2b2b3a;line-height:1.55;">
@@ -64,7 +69,25 @@ function buildHtml(c, flyerCid, logoCid) {
   <p style="text-align:center;font-size:12px;color:#888;margin:0 0 8px;">or copy this link: <a href="${c.BUTTON_URL}" style="color:#6d28d9;">${c.BUTTON_URL}</a></p>
 
   <p style="margin:18px 0 0;">We would love to see your dancer in the studio this summer. Whether they're looking to improve technique, try a new style, or just have fun dancing with friends, our summer session is a great opportunity to stay moving and make memories.</p>
-  <p style="margin:14px 0 0;">We hope to see you this week!</p>
+
+  <div style="margin:28px 0 0;padding-top:18px;border-top:2px solid #eee;">
+    <h2 style="font-size:18px;color:#7c2d4b;margin:0 0 4px;">Grown-Ups, This One's for You — Adult Summer Series 💃</h2>
+    <p style="margin:0 0 14px;color:#666;font-style:italic;">Move. Connect. Grow.</p>
+    <img src="cid:${adultCid}" alt="Adult Summer Series — Mondays starting June 29" width="560" style="width:100%;max-width:560px;height:auto;border-radius:14px;margin:0 0 16px;display:block;border:1px solid #eee;" />
+    <p style="margin:0 0 12px;">A <strong>90-minute movement experience designed for women</strong>, on <strong>Mondays starting June 29th, 6:00–7:30 PM</strong>. Each session flows through three parts:</p>
+    <ul style="margin:0 0 12px;padding-left:20px;line-height:1.6;">
+      <li><strong>45 min · Throwback Energy</strong> — dance, move, and laugh to your favorite throwback hits.</li>
+      <li><strong>30 min · Femme Flow</strong> — build confidence through graceful, empowering movement.</li>
+      <li><strong>15 min · Calm Confidence</strong> — stretch, breathe, and reconnect with yourself.</li>
+    </ul>
+    <p style="margin:0 0 16px;"><strong>$25 drop-in per class</strong>, or grab the <strong>Summer Series Pass</strong> to attend all 6 classes and save. Registration is now open!</p>
+    <p style="text-align:center;margin:0 0 8px;">
+      <a href="${c.ADULT_URL}" style="display:inline-block;background:#7c2d4b;color:#fff;text-decoration:none;font-weight:700;font-size:16px;padding:13px 34px;border-radius:999px;">${c.ADULT_LABEL}</a>
+    </p>
+    <p style="text-align:center;font-size:12px;color:#888;margin:0 0 8px;">or copy this link: <a href="${c.ADULT_URL}" style="color:#7c2d4b;">${c.ADULT_URL}</a></p>
+  </div>
+
+  <p style="margin:18px 0 0;">We hope to see you this week!</p>
 
   <div style="margin:24px 0 0;padding-top:16px;border-top:2px solid #eee;font-size:14px;color:#444;">
     <p style="margin:0 0 8px;">Warmly,</p>
@@ -84,11 +107,14 @@ function buildHtml(c, flyerCid, logoCid) {
 async function main() {
   const c = CONFIG
   const flyerB64 = readFileSync(c.FLYER_PATH).toString('base64')
+  const adultB64 = readFileSync(c.ADULT_FLYER_PATH).toString('base64')
   const logoB64 = readFileSync(c.LOGO_PATH).toString('base64')
-  const html = buildHtml(c, 'flyer', 'logo')
+  const html = buildHtml(c, 'flyer', 'logo', 'adultflyer')
   const attachments = [
     { filename: 'Summer-Classes.png', content: flyerB64, content_id: 'flyer' },
+    { filename: 'Adult-Summer-Series.png', content: adultB64, content_id: 'adultflyer' },
     { filename: 'Summer-Classes.png', content: flyerB64 },
+    { filename: 'Adult-Summer-Series.png', content: adultB64 },
     { filename: 'capital-core-dance-logo.png', content: logoB64, content_id: 'logo' },
   ]
 
