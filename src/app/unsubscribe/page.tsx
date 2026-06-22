@@ -21,6 +21,18 @@ function UnsubscribeInner() {
   const [working, setWorking] = useState(false)
   const [error, setError] = useState('')
 
+  if (status === 'error') {
+    return (
+      <Shell>
+        <h1 style={h1}>Something went wrong</h1>
+        <p style={p}>
+          We couldn’t process your request just now. Please try the link again in a moment, or
+          reply to any of our emails and we’ll remove you right away.
+        </p>
+      </Shell>
+    )
+  }
+
   if (status === 'invalid') {
     return (
       <Shell>

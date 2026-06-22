@@ -49,25 +49,28 @@ async function applyOptOut(
     .ilike('email', email)
     .maybeSingle()
 
-  if (existing) {
-    await admin
-      .from('email_subscribers')
-      .update({
+  const write = existing
+    ? await admin
+        .from('email_subscribers')
+        .update({
+          status,
+          unsubscribed_at: action === 'resubscribe' ? null : now,
+          unsubscribe_reason: action === 'resubscribe' ? null : reason,
+          profile_id: profile?.id ?? null,
+        })
+        .eq('id', existing.id)
+    : await admin.from('email_subscribers').insert({
+        email,
         status,
+        source: 'unsubscribe',
+        profile_id: profile?.id ?? null,
         unsubscribed_at: action === 'resubscribe' ? null : now,
         unsubscribe_reason: action === 'resubscribe' ? null : reason,
-        profile_id: profile?.id ?? null,
       })
-      .eq('id', existing.id)
-  } else {
-    await admin.from('email_subscribers').insert({
-      email,
-      status,
-      source: 'unsubscribe',
-      profile_id: profile?.id ?? null,
-      unsubscribed_at: action === 'resubscribe' ? null : now,
-      unsubscribe_reason: action === 'resubscribe' ? null : reason,
-    })
+
+  // The opt-out record is the whole point — never report success if it failed.
+  if (write.error) {
+    throw new Error(`email_subscribers write failed: ${write.error.message}`)
   }
 
   await logActivity(
@@ -96,7 +99,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(dest)
   }
 
-  await applyOptOut(createAdminClient(), email, 'unsubscribe', 'link')
+  try {
+    await applyOptOut(createAdminClient(), email, 'unsubscribe', 'link')
+  } catch (e) {
+    console.error('[unsubscribe] write failed', e)
+    dest.searchParams.set('status', 'error')
+    return NextResponse.redirect(dest)
+  }
   dest.searchParams.set('status', 'done')
   dest.searchParams.set('e', email)
   dest.searchParams.set('t', token)
@@ -113,6 +122,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid or expired link' }, { status: 400 })
   }
 
-  await applyOptOut(createAdminClient(), email, action, action === 'unsubscribe' ? 'one-click' : null)
+  try {
+    await applyOptOut(createAdminClient(), email, action, action === 'unsubscribe' ? 'one-click' : null)
+  } catch (e) {
+    console.error('[unsubscribe] write failed', e)
+    return NextResponse.json({ error: 'Could not update subscription. Please try again.' }, { status: 500 })
+  }
   return NextResponse.json({ ok: true, email, status: action === 'resubscribe' ? 'subscribed' : 'unsubscribed' })
 }
