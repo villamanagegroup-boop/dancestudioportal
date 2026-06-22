@@ -59,13 +59,13 @@ create trigger trg_email_subscribers_updated_at
 alter table email_subscribers enable row level security;
 
 -- Staff manage the list from the portal. (Service-role server code bypasses RLS.)
+-- Admins manage the list from the portal. (Service-role server code bypasses
+-- RLS, so the senders/unsubscribe route are unaffected by this policy.)
+-- NB: profiles.role is the user_role enum (admin/parent/instructor); staff
+-- roles like owner/manager live on instructors.staff_role, not here.
 drop policy if exists "staff_all_email_subscribers" on email_subscribers;
 create policy "staff_all_email_subscribers" on email_subscribers for all using (
-  exists (
-    select 1 from profiles
-    where id = auth.uid()
-      and role in ('owner', 'admin', 'manager', 'front_desk', 'instructor')
-  )
+  exists (select 1 from profiles where id = auth.uid() and role = 'admin')
 );
 
 comment on table email_subscribers is
