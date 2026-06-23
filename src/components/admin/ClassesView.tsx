@@ -28,6 +28,7 @@ interface ClassItem {
   start_time: string
   end_time: string
   max_students: number
+  enrolled: number
   monthly_tuition: number
   active: boolean
   instructor: { first_name: string; last_name: string } | null
@@ -147,7 +148,20 @@ export default function ClassesView({ classes, instructors, rooms, classTypes, s
                     {cls.instructor ? `${cls.instructor.first_name} ${cls.instructor.last_name}` : '—'}
                   </td>
                   <td className="px-5 py-3 text-sm text-gray-600">{cls.room?.name ?? '—'}</td>
-                  <td className="px-5 py-3 text-sm text-gray-600">{cls.max_students}</td>
+                  <td className="px-5 py-3 text-sm">
+                    {cls.max_students ? (
+                      <span
+                        className={`font-medium ${cls.enrolled >= cls.max_students ? 'text-amber-600' : 'text-gray-900'}`}
+                        title="Enrolled (active, pending, waitlist, trial) / capacity"
+                      >
+                        {cls.enrolled}/{cls.max_students}
+                      </span>
+                    ) : (
+                      <span className="text-gray-600" title="Enrolled (active, pending, waitlist, trial) · no capacity set">
+                        {cls.enrolled} <span className="text-gray-400">/ —</span>
+                      </span>
+                    )}
+                  </td>
                   <td className="px-5 py-3 text-sm text-gray-900 font-medium">${cls.monthly_tuition}/mo</td>
                   <td className="sticky right-0 bg-white group-hover:bg-gray-50 border-l border-gray-100 px-5 py-3 text-right transition-colors">
                     <RowActions
