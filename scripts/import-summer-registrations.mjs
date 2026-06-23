@@ -69,6 +69,15 @@ const DATA = [
   { first: 'Leonardo', last: 'Harris',        gender: g('Male'),   code: 'we-hh',   status: 'pending',
     parent: 'Casey Cherubini', email: 'Love2write92@yahoo.com', phone: '',
     note: 'Summer 2026 (website). UNPAID — no PayPal order recorded. Enrolled pending payment.' },
+  // Added 2026-06-23: two website signups that arrived after the original import
+  // and were never enrolled (caught by scripts/audit-class-signups.mjs). Both
+  // had no recorded payment, so enrolled 'pending' per studio precedent.
+  { first: 'Abigail',  last: 'Vidrine',       gender: g('Female'), code: 'th-tiny', status: 'pending',
+    parent: 'Haley Vidrine', email: 'haley.carpenter03@gmail.com', phone: '7573759198',
+    note: 'Summer 2026 (website). DROP-IN — Thu Tiny Ballet + Tumble, Week 3 (Jul 7–12) ONLY, $25, not a full-season enrollment. No payment recorded — enrolled pending payment.' },
+  { first: 'Paige',    last: 'Pamulapati',    gender: g(null),     code: 'tu-tiny', status: 'pending',
+    parent: 'Lauren Pamulapati', email: 'lgrecheck@gmail.com', phone: '8046474588',
+    note: 'Summer 2026 (website). Returning student, full session $120. No payment recorded — enrolled pending payment.' },
 ]
 
 const norm = (s) => (s ?? '').trim().toLowerCase()
