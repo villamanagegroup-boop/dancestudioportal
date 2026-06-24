@@ -12,6 +12,7 @@ const OPEN_API = [
   '/api/intake/from-site',
   '/api/contact', // public studio contact form (login screen)
   '/api/unsubscribe', // public mailing-list opt-out (self-secured by HMAC token)
+  '/api/soap', // public demo SOAP web service (WSDL + read-only operations)
 ]
 
 // Member portal roots (their own entitlement checks below).
